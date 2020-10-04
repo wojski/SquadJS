@@ -16,6 +16,7 @@ import seedingMessage from './seeding-message/index.js';
 import skipMap from './skipmap/index.js';
 import teamRandomizer from './team-randomizer/index.js';
 import chatCommands from './chat-commands/index.js';
+import mapvoteExtended from './mapvote-extended/mapvote-extended.js';
 
 export {
   autoTKWarn,
@@ -35,7 +36,8 @@ export {
   mysqlLog,
   seedingMessage,
   skipMap,
-  teamRandomizer
+  teamRandomizer,
+  mapvoteExtended
 };
 
 const plugins = [
@@ -56,7 +58,8 @@ const plugins = [
   mysqlLog,
   seedingMessage,
   skipMap,
-  teamRandomizer
+  teamRandomizer,
+  mapvoteExtended
 ];
 
 const namedPlugins = {};

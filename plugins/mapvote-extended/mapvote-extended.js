@@ -1,6 +1,7 @@
 import { CHATS_ADMINCHAT } from 'core/constants';
 import { NEW_GAME, CHAT_MESSAGE } from 'squad-server/events';
-import EnginesBuilder from './components/engines-builder';
+import EnginesBuilder from './components/engines-builder.js';
+import { MAPVOTE_EXTENDED_COMMANDS } from './core/plugin-commands.js';
 
 export default {
   name: 'mapvote-extended',
@@ -83,7 +84,7 @@ export default {
     },
     // MapSelection
     mapBasket: {
-      required: true,
+      required: false, // TODO: CHANGE TO REQUIRED!
       description: 'Options to configure map basket (Filter for maps and additional options)',
       default: {
         layerFilter: null,
@@ -173,27 +174,6 @@ export default {
       }
     }
   },
-  commands: {
-    common: {
-      mapvote: {
-        text: 'mapvote',
-        pattern: '/^!mapvote ?(.*)/'
-      },
-      vote: {
-        pattern: '/^([0-9])/'
-      }
-    },
-    players: {
-      help: 'help',
-      results: 'results',
-      nominate: 'nominate'
-    },
-    admin: {
-      start: 'start',
-      autoVoteInfo: 'auto-vote-info',
-      voteInfo: 'vote-info'
-    }
-  },
 
   init: async (server, options) => {
     const engines = new EnginesBuilder(server, options).Build();
@@ -217,21 +197,36 @@ export default {
       //   await server.rcon.warn(info.steamID, COPYRIGHT_MESSAGE);
       // }
 
-      const commandMatch = info.message.match(this.commands.common.mapvote.patter);
+      console.log(info.message);
+      console.log(MAPVOTE_EXTENDED_COMMANDS.common.mapvote.pattern);
+
+      const commandMatch = info.message.match(MAPVOTE_EXTENDED_COMMANDS.common.mapvote.pattern);
+
+      console.log(commandMatch);
+
       if (commandMatch) {
+        console.log(info.steamID);
         if (info.chat === CHATS_ADMINCHAT) {
-          if (commandMatch[1].startsWith(this.commands.admin.autoVoteInfo)) {
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.autoVoteInfo)) {
             console.log('autoVoteInfo');
 
-            const info = engines.autoVote.getAutoVoteInfo();
+            const autoVoteInfo = engines.autoVote.getAutoVoteInfo();
 
-            for (let i = 0; i < info.length; i++) {
-              await server.rcon.warn(info.steamID, info[i]);
+            for (let i = 0; i < autoVoteInfo.length; i++) {
+              await server.rcon.warn(info.steamID, autoVoteInfo[i]);
             }
+          }
+
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.help)) {
+            console.log('admin help');
+
+            await server.rcon.warn(info.steamID, '!mapvote start - Manually trigger vote process');
+            await server.rcon.warn(info.steamID, '!mapvote auto-vote-info - Auto vote info');
+            await server.rcon.warn(info.steamID, '!mapvote vote-info - Current vote details');
           }
         }
 
-        if (commandMatch[1] === this.commands.players.help) {
+        if (commandMatch[1] === MAPVOTE_EXTENDED_COMMANDS.players.help) {
           // await server.rcon.warn(info.steamID, 'To vote type the layer number into chat:');
           // for (const layer of mapvote.squadLayerFilter.getLayers()) {
           //   await server.rcon.warn(info.steamID, `${layer.layerNumber} - ${layer.layer}`);

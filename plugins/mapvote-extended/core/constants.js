@@ -1,0 +1,11 @@
+/* MAP-VOTE-EXTENDED EVENTS */
+const START_VOTE = 'VM_EXTENDED_START_VOTE';
+
+const END_VOTE = 'VM_EXTENDED_START_VOTE';
+
+/* RCON ACTIONS */
+// const RCON_
+
+// const CHATS_CHATALL = "ChatAll"
+
+export { START_VOTE, END_VOTE };

@@ -7,7 +7,7 @@
   },
 */
 
-import AutoVoteEngine from './engines/auto-vote-engine';
+import AutoVoteEngine from './engines/auto-vote-engine.js';
 
 export default class EnginesBuilder {
   constructor(server, options) {

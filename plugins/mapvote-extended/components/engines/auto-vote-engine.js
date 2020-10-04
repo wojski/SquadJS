@@ -13,7 +13,7 @@
 //   });
 import EventEmitter from 'events';
 import { A2S_INFO_UPDATED } from 'squad-server/events';
-import { START_VOTE } from '../core/constants';
+import { START_VOTE } from 'mapvote-extended/constants';
 
 export const AUTO_VOTE_TRIGGER_TYPE = {
   TICKET: 1, // How to obtain current ticket values?
@@ -38,7 +38,7 @@ export default class AutoVoteEngine extends EventEmitter {
 
     server.on(A2S_INFO_UPDATED, () => {
       console.log('Auto vote debug');
-      console.log(JSON.serialize(this.server));
+      console.log(this.server.matchTimeout);
     });
 
     this.setupTriggers();
@@ -50,6 +50,9 @@ export default class AutoVoteEngine extends EventEmitter {
 
   setupTriggers() {
     // If not enabled, no defined triggers will be set
+
+    console.log('SETUP TRIGGERS');
+
     if (this.isEnabled) {
       this.triggersDefinition.forEach((trigger) => {
         if (trigger.type === AUTO_VOTE_TRIGGER_TYPE.TIME) {
@@ -85,16 +88,14 @@ export default class AutoVoteEngine extends EventEmitter {
 
     this.triggers.forEach((trigger) => {
       info.push(
-        `${trigger.name} | ${AutoVoteEngine.TriggerTypeTransaltor(trigger.type)} | ${
-          trigger.triggerTime
-        }`
+        `${trigger.name} | ${this.translateTriggerType(trigger.type)} | ${trigger.triggerTime}`
       );
     });
 
     return info;
   }
 
-  static TranslateTriggerType(type) {
+  translateTriggerType(type) {
     switch (type) {
       case AUTO_VOTE_TRIGGER_TYPE.TIME:
         return 'TIME';
