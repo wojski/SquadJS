@@ -4,6 +4,8 @@
 index-test.js
 config-test.json
 
+config.json
+
 # Dependencies
 node_modules/
 package-lock.json

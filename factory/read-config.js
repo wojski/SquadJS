@@ -4,7 +4,7 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default function (configPath = './config.json') {
+export default function (configPath = './config-test.json') {
   const fullConfigPath = path.resolve(__dirname, '../', configPath);
   if (!fs.existsSync(fullConfigPath)) throw new Error('Config file does not exist.');
   const unparsedConfig = fs.readFileSync(fullConfigPath, 'utf8');

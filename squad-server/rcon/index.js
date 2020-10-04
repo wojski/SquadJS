@@ -103,6 +103,8 @@ export default class Rcon {
       // setup socket
       this.client = new net.Socket();
 
+      console.log(this.client);
+
       this.client.on('data', this.onData);
 
       this.client.on('error', (err) => {

@@ -11,4 +11,12 @@ const SQUADJS_VERSION = JSON.parse(
 /* As set out by the terms of the license, the following should not be modified. */
 const COPYRIGHT_MESSAGE = 'Powered by SquadJS, Copyright © 2020';
 
-export { SQUADJS_VERSION, COPYRIGHT_MESSAGE };
+/* CHATS */
+const CHATS_ADMINCHAT = 'ChatAdmin';
+
+/* RCON ACTIONS */
+// const RCON_
+
+// const CHATS_CHATALL = "ChatAll"
+
+export { SQUADJS_VERSION, COPYRIGHT_MESSAGE, CHATS_ADMINCHAT };
