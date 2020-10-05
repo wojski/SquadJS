@@ -35,13 +35,15 @@ export default {
       Player Commands:\n
        * <code>!mapvote help</code> - Show other commands players can use.\n
        * <code>!mapvote results</code> - Show the results of the current map vote.\n
-       * <code>!mapvote nominate</code> - Nominate the layer to the upcoming voting.\n
+       * <code>!mapvote nominate <layer></code> - Nominate the layer to the upcoming voting.\n
        * <code><layer number></code> - Vote for a layer using the layer number.\n
       \n\n 
       Admin Commands (Admin Chat Only):\n 
        * <code>!mapvote start</code> - Manually trigger vote process.\n
        * <code>!mapvote auto-vote-info</code> - Auto vote info.\n
-       * <code>!mapvote vote-info</code> - Current vote details.\n`,
+       * <code>!mapvote vote-info</code> - Current vote details.\n
+       * <code>!mapvote nominate-info</code> - Current nominations.\n
+       `,
 
   defaultEnabled: false,
   optionsSpec: {
@@ -121,6 +123,12 @@ export default {
           default: false,
           example: true
         },
+        canReNominate: {
+          required: false,
+          description: 'Can player change his nomination',
+          default: false,
+          example: true
+        },
         nominationDelayEnabled: {
           required: false,
           description: 'Is nomination delay enabled',
@@ -179,6 +187,7 @@ export default {
     const engines = new EnginesBuilder(server, options).Build();
 
     // let mapvote = null;
+    server.rcon.execute(`AdminBroadcast TEST ABC`);
 
     server.on(NEW_GAME, () => {
       engines.autoVote.startNewMap();
@@ -203,9 +212,10 @@ export default {
       const commandMatch = info.message.match(MAPVOTE_EXTENDED_COMMANDS.common.mapvote.pattern);
 
       console.log(commandMatch);
+      console.log(commandMatch.length);
+      console.log(commandMatch[0]);
 
       if (commandMatch) {
-        console.log(info.steamID);
         if (info.chat === CHATS_ADMINCHAT) {
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.autoVoteInfo)) {
             console.log('autoVoteInfo');
@@ -218,44 +228,62 @@ export default {
           }
 
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.help)) {
-            console.log('admin help');
-
             await server.rcon.warn(info.steamID, '!mapvote start - Manually trigger vote process');
             await server.rcon.warn(info.steamID, '!mapvote auto-vote-info - Auto vote info');
             await server.rcon.warn(info.steamID, '!mapvote vote-info - Current vote details');
+            await server.rcon.warn(
+              info.steamID,
+              '!mapvote nominate-info - Current nominations list'
+            );
           }
-        }
 
-        if (commandMatch[1] === MAPVOTE_EXTENDED_COMMANDS.players.help) {
-          // await server.rcon.warn(info.steamID, 'To vote type the layer number into chat:');
-          // for (const layer of mapvote.squadLayerFilter.getLayers()) {
-          //   await server.rcon.warn(info.steamID, `${layer.layerNumber} - ${layer.layer}`);
-          // }
-          console.log('help');
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.nominateInfo)) {
+            await server.rcon.warn(info.steamID, 'Nominated maps:');
 
-          await server.rcon.warn(
-            info.steamID,
-            '!mapvote results - Show the results of the current map vote'
-          );
-          await server.rcon.warn(
-            info.steamID,
-            '!mapvote nominate <layer-name> - Nominate the layer to the upcoming voting'
-          );
-          await server.rcon.warn(
-            info.steamID,
-            '<layer number> - After vote start, type selected map number'
-          );
+            var layers = await engines.nomination.getNominatedMapsInfo();
 
-          // if (options.minVoteCount !== null)
-          //   await server.rcon.warn(
-          //     info.steamID,
-          //     `${options.minVoteCount} votes need to be made for a winner to be selected.`
-          //   );
+            for (let i = 0; i < layers.length; i++) {
+              await server.rcon.warn(info.steamID, layers[i]);
+            }
+          }
+        } else {
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.help)) {
+            await server.rcon.warn(
+              info.steamID,
+              '!mapvote results - Show the results of the current map vote'
+            );
+            await server.rcon.warn(
+              info.steamID,
+              '!mapvote nominate <layer-name> - Nominate the layer to the upcoming voting'
+            );
+            await server.rcon.warn(
+              info.steamID,
+              '<layer number> - After vote start, type selected map number'
+            );
+          }
 
-          // await server.rcon.warn(
-          //   info.steamID,
-          //   'To see current results type into chat: !mapvote results'
-          // );
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.nominate)) {
+            var layerName = commandMatch[1].substr(commandMatch[1].indexOf(' ') + 1);
+
+            console.log(layerName);
+
+            var checkResult = engines.nomination.isNominationAvailable(info.steamID);
+
+            if (!checkResult.available) {
+              await server.rcon.warn(info.steamID, checkResult.message);
+            } else {
+              var nominationResult = await engines.nomination.addNewNomination(
+                layerName,
+                info.steamID
+              );
+
+              console.log('result');
+              console.log(nominationResult);
+              console.log(nominationResult.message);
+
+              await server.rcon.warn(info.steamID, nominationResult.message);
+            }
+          }
         }
 
         // if (commandMatch[1].startsWith('start')) {

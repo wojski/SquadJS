@@ -1,19 +1,11 @@
 // Ten hypervisor ma na celu automatyczne triggerowanie vote
-// - Po rozpoczęciu mapy ustawić startowy czas całej mapy
 // - Po rozpoczęciu mapy na podstawie opcji ustawić kiedy ma zostać striggerowany vote
-// - Nasłuchiwać na informacje z serwera (liczba ticketów i czas)
 // - Ticketow sie nie da
 
-// server.on(A2S_INFO_UPDATED, () => {
-//     if (!options.disableStatus)
-//       options.discordClient.user.setActivity(
-//         `(${server.playerCount}/${server.publicSlots}) ${server.currentLayer}`,
-//         { type: 'WATCHING' }
-//       );
-//   });
 import EventEmitter from 'events';
 import { A2S_INFO_UPDATED } from 'squad-server/events';
 import { START_VOTE } from 'mapvote-extended/constants';
+import { GetTimeText } from 'mapvote-extended/helpers';
 
 export const AUTO_VOTE_TRIGGER_TYPE = {
   TICKET: 1, // How to obtain current ticket values?
@@ -24,6 +16,9 @@ export const AUTO_VOTE_TRIGGER_TYPE = {
 export default class AutoVoteEngine extends EventEmitter {
   constructor(server, options) {
     super();
+
+    this.triggersCreated = false;
+    this.nominateTriggerCreated = false;
 
     this.server = server;
 
@@ -36,41 +31,77 @@ export default class AutoVoteEngine extends EventEmitter {
 
     this.triggers = [];
 
+    // Not used, to verify can we obtain information about tickets left
     server.on(A2S_INFO_UPDATED, () => {
-      console.log('Auto vote debug');
-      console.log(this.server.matchTimeout);
+      //   console.log('Auto vote debug');
+      //   console.log(this.server.matchTimeout);
     });
 
-    this.setupTriggers();
+    this.startNewMap();
   }
 
   startNewMap() {
+    this.triggers = [];
+    this.triggersCreated = false;
+    this.nominateTriggerCreated = false;
     this.setupTriggers();
+
+    console.log('Start interval');
+    // Check triggers every 30 seconds
+
+    // setInterval(() => {
+
+    //   }, (30 * 60 * 1000));
+
+    setInterval(async () => {
+      console.log('BAZUR');
+      this.checkTriggers();
+    }, 30 * 1000);
   }
 
   setupTriggers() {
-    // If not enabled, no defined triggers will be set
-
-    console.log('SETUP TRIGGERS');
-
     if (this.isEnabled) {
+      if (this.triggersCreated) {
+        return;
+      }
+
+      this.triggersCreated = true;
+
       this.triggersDefinition.forEach((trigger) => {
         if (trigger.type === AUTO_VOTE_TRIGGER_TYPE.TIME) {
-          this.triggers.push(new AutoVoteTimeTrigger(trigger, this.server.matchTimeout)); // verify this?
+          this.triggers.push(new AutoVoteTimeTrigger(trigger)); // verify this?
         }
       });
     }
   }
 
-  addNominateTrigger() {
-    console.log('Add nominate trigger');
+  addNominateTrigger(voteTimeDelay) {
+    if (!this.nominateTriggerCreated) {
+      this.nominateTriggerCreated = true;
+
+      this.triggers.push(
+        new AutoVoteTimeTrigger({
+          type: AUTO_VOTE_TRIGGER_TYPE.NOMINATE,
+          name: 'nominateTrigger',
+          value: voteTimeDelay
+        })
+      );
+    }
   }
 
   checkTriggers() {
+    if (this.triggers.length === 0) {
+      return;
+    }
+
+    console.log('Trigger check');
+
     let anyTriggerMet = false;
 
     for (let i = 0; i < this.triggers.length; i++) {
-      if (this.triggers[i].isTriggerReady()) {
+      console.log(`Trigger: ${this.triggers[i].name}`);
+
+      if (this.triggers[i].isReadyToTrigger()) {
         anyTriggerMet = true;
         break;
       }
@@ -88,7 +119,9 @@ export default class AutoVoteEngine extends EventEmitter {
 
     this.triggers.forEach((trigger) => {
       info.push(
-        `${trigger.name} | ${this.translateTriggerType(trigger.type)} | ${trigger.triggerTime}`
+        `${trigger.name} | ${this.translateTriggerType(trigger.type)} | In: ${GetTimeText(
+          trigger.triggerTime
+        )}`
       );
     });
 
@@ -108,17 +141,17 @@ export default class AutoVoteEngine extends EventEmitter {
 }
 
 export class AutoVoteTimeTrigger {
-  constructor(template, serverBaseTimeout) {
+  constructor(template) {
     this.type = template.type;
     this.name = template.name;
-    this.triggerTime = serverBaseTimeout - template.value; // TO check how it's working
+    this.triggerTime = new Date(new Date().getTime() + template.value * 60000); // TO check how it's working
   }
 
   getTriggerTime() {
     return this.triggerTime;
   }
 
-  isTriggerReady(serverTimeout) {
-    return serverTimeout < this.triggerTime;
+  isReadyToTrigger() {
+    return new Date() > this.triggerTime;
   }
 }
