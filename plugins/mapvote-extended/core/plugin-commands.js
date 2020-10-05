@@ -18,7 +18,8 @@ const MAPVOTE_EXTENDED_COMMANDS = {
     help: 'admin-help',
     autoVoteInfo: 'auto-vote-info',
     voteInfo: 'vote-info',
-    nominateInfo: 'nominate-info'
+    nominateInfo: 'nominate-info',
+    testNominate: 'test-nominate'
   }
 };
 

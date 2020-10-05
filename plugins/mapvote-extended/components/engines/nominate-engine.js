@@ -9,7 +9,7 @@ import { SquadLayers } from 'core/squad-layers';
 import { NOMINATION_START } from 'mapvote-extended/constants';
 
 export default class NominateEngine extends EventEmitter {
-  constructor(server, options) {
+  constructor(server, options, mapBasket) {
     super();
 
     this.nominations = [];
@@ -19,6 +19,7 @@ export default class NominateEngine extends EventEmitter {
 
     this.server = server;
     this.options = new NominateOptions(options);
+    this.mapBasketEngine = mapBasket;
 
     this.newMap();
   }
@@ -52,10 +53,10 @@ export default class NominateEngine extends EventEmitter {
 
   async addNewNomination(userText, identifier) {
     try {
-      var layerResult = await this.getLayerByDidYouMean(userText);
+      var layerResult = await this.mapBasketEngine.isLayerAvailable(userText);
 
-      if (layerResult === null) {
-        return { message: 'Invalid layer name' };
+      if (layerResult === null || !layerResult.isAvailable) {
+        return { message: layerResult.message };
       }
 
       var layer = layerResult.layer;
@@ -77,7 +78,7 @@ export default class NominateEngine extends EventEmitter {
       }
 
       return { message: `Nominated ${layer}` };
-    } catch {
+    } catch (error) {
       return { message: 'Invalid layer name' };
     }
   }

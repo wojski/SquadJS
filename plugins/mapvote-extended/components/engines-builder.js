@@ -9,6 +9,7 @@
 
 import AutoVoteEngine from './engines/auto-vote-engine.js';
 import NominateEngine from './engines/nominate-engine.js';
+import MapBasketEngine from './engines/map-basket-engine.js';
 
 export default class EnginesBuilder {
   constructor(server, options) {
@@ -17,27 +18,14 @@ export default class EnginesBuilder {
   }
 
   Build() {
+    var mapBasket = new MapBasketEngine(this.server, this.options, this.options.layerFilter);
+
     const engines = {
-      autoVote: new AutoVoteEngine(this.server, this.options.autoVoting),
-      nomination: new NominateEngine(this.server, this.options.nomination)
+      autoVote: new AutoVoteEngine(this.server, this.options.autoVoting, mapBasket),
+      nomination: new NominateEngine(this.server, this.options.nomination, mapBasket),
+      mapBasket: mapBasket // TO REMOVE (TEST ONLY!)
     };
 
     return engines;
-
-    // if (this.options.nomination != null && this.options.nomination.isEnabled) {
-
-    // }
-
-    // if (this.options.broadcasting != null && this.options.broadcasting.enableVoteStatusBroadcasting) {
-
-    // }
-
-    // if(options.nomination != null && options.nomination.isEnabled){
-    //   // setupNomination
-    // }
-
-    // if(options.broadcasting != null && options.broadcasting.enableVoteStatusBroadcasting){
-
-    // }
   }
 }

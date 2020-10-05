@@ -53,6 +53,17 @@ export default {
       default: 3,
       example: 5
     },
+    layerFilter: {
+      required: false,
+      description: 'The layers players can choose from.',
+      default: 'layerFilter'
+    },
+    multipleLayersFromSameMap: {
+      required: false,
+      description: 'Can map basket get layers from same map',
+      default: false,
+      example: true
+    },
     // Auto voting
     autoVoting: {
       required: false,
@@ -81,33 +92,6 @@ export default {
               value: 150
             }
           ]
-        }
-      }
-    },
-    // MapSelection
-    mapBasket: {
-      required: false, // TODO: CHANGE TO REQUIRED!
-      description: 'Options to configure map basket (Filter for maps and additional options)',
-      default: {
-        layerFilter: null,
-        doNotUseLast: 4,
-        excludeLastMapNames: 1
-      },
-      example: {
-        layerFilter: {
-          required: false,
-          description: 'The layers players can choose from.',
-          default: 'layerFilter'
-        },
-        doNotUseLast: {
-          required: false,
-          description: 'Exclude from map basket last N layers.',
-          default: 4
-        },
-        excludeLastMapNames: {
-          required: false,
-          description: 'Exclude from map basket last N map name ',
-          default: 1
         }
       }
     },
@@ -186,8 +170,22 @@ export default {
   init: async (server, options) => {
     const engines = new EnginesBuilder(server, options).Build();
 
-    // let mapvote = null;
-    server.rcon.execute(`AdminBroadcast TEST ABC`);
+    // Nomination test
+    await setTimeout(async () => {
+      console.log(await engines.nomination.addNewNomination('Al Basrah AAS v1', 1));
+      // console.log(await engines.nomination.addNewNomination("Chora AAS v1", 2));
+      // console.log(await engines.nomination.addNewNomination("Fallujah RAAS v1", 3));
+      // console.log(await engines.nomination.addNewNomination("Fool's Road RAAS v1", 4));
+
+      var nominations = await engines.nomination.getNominationsForVote();
+      console.log('Get nominations');
+      console.log(nominations);
+
+      var votes = await engines.mapBasket.getMapsForVote(nominations);
+
+      console.log('Get results');
+      console.log(votes);
+    }, 10 * 1000);
 
     server.on(NEW_GAME, () => {
       engines.autoVote.startNewMap();
@@ -246,6 +244,20 @@ export default {
               await server.rcon.warn(info.steamID, layers[i]);
             }
           }
+
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.testNominate)) {
+            console.log(await engines.nomination.addNewNomination('Al Basrah Invasion v1', 1));
+            console.log(await engines.nomination.addNewNomination('Chora AAS v1', 2));
+            console.log(await engines.nomination.addNewNomination('Fallujah Invasion v1', 3));
+            console.log(await engines.nomination.addNewNomination("Fool's Road Invasion v1", 4));
+
+            var nominations = await engines.nomination.getNominationsForVote();
+            console.log(nominations);
+
+            var votes = await engines.mapBasket.getMapsForVote(nominations);
+
+            console.log(votes);
+          }
         } else {
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.help)) {
             await server.rcon.warn(
@@ -265,6 +277,7 @@ export default {
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.nominate)) {
             var layerName = commandMatch[1].substr(commandMatch[1].indexOf(' ') + 1);
 
+            console.log('RESULT ');
             console.log(layerName);
 
             var checkResult = engines.nomination.isNominationAvailable(info.steamID);
