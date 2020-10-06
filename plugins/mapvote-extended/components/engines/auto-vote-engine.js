@@ -29,6 +29,8 @@ export default class AutoVoteEngine extends EventEmitter {
       this.triggersDefinition = options.triggers;
     }
 
+    this.triggerInterval = null;
+
     this.triggers = [];
     setTimeout(() => {
       this.startNewMap();
@@ -49,7 +51,9 @@ export default class AutoVoteEngine extends EventEmitter {
 
     console.log('[AUTO_VOTE_ENGINE] MAP STARTED');
 
-    setInterval(async () => {
+    clearInterval(this.triggerInterval);
+
+    this.triggerInterval = setInterval(async () => {
       this.checkTriggers();
     }, 30 * 1000);
   }
