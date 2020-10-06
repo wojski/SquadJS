@@ -140,11 +140,29 @@ export default {
       }
     },
     // Broadcasting
-    broadcasting: {
+    broadcast: {
       required: false,
       description: 'Options to configure broadcasting',
       default: null,
       example: {
+        enablefirstInformationBroadcasting: {
+          required: false,
+          description: 'Enable broadcasting information about voting',
+          default: false,
+          example: true
+        },
+        firstInformationBroadcastingDelay: {
+          required: false,
+          description: 'First info delay (minutes)',
+          default: 3,
+          example: 3
+        },
+        enableNominationBroadcasting: {
+          required: false,
+          description: 'Enable broadcasting information about first nomination',
+          default: false,
+          example: true
+        },
         enableVoteStatusBroadcasting: {
           required: false,
           description: 'Enable broadcasting voting results',
@@ -156,12 +174,6 @@ export default {
           description: 'How often vote status message appear (seconds)',
           default: 30,
           example: 45
-        },
-        confirmVoteAsWarning: {
-          required: false,
-          description: 'Display warning with vote confirmation',
-          default: false,
-          example: true
         }
       }
     }
@@ -170,48 +182,25 @@ export default {
   init: async (server, options) => {
     const engines = new EnginesBuilder(server, options).Build();
 
-    // Nomination test
-    await setTimeout(async () => {
-      console.log(await engines.nomination.addNewNomination('Al Basrah AAS v1', 1));
-      // console.log(await engines.nomination.addNewNomination("Chora AAS v1", 2));
-      // console.log(await engines.nomination.addNewNomination("Fallujah RAAS v1", 3));
-      // console.log(await engines.nomination.addNewNomination("Fool's Road RAAS v1", 4));
-
-      var nominations = await engines.nomination.getNominationsForVote();
-      console.log('Get nominations');
-      console.log(nominations);
-
-      var votes = await engines.mapBasket.getMapsForVote(nominations);
-
-      console.log('Get results');
-      console.log(votes);
-    }, 10 * 1000);
-
     server.on(NEW_GAME, () => {
       engines.autoVote.startNewMap();
     });
 
     server.on(CHAT_MESSAGE, async (info) => {
-      // const voteMatch = info.message.match(/^([0-9])/);
-      // if (voteMatch) {
-      //   if (!mapvote) return;
-      //   try {
-      //     const layerName = await mapvote.makeVoteByNumber(info.steamID, parseInt(voteMatch[1]));
-      //     await server.rcon.warn(info.steamID, `You voted for ${layerName}.`);
-      //   } catch (err) {
-      //     await server.rcon.warn(info.steamID, err.message);
-      //   }
-      //   await server.rcon.warn(info.steamID, COPYRIGHT_MESSAGE);
-      // }
-
-      console.log(info.message);
-      console.log(MAPVOTE_EXTENDED_COMMANDS.common.mapvote.pattern);
+      const voteMatch = info.message.match(MAPVOTE_EXTENDED_COMMANDS.common.vote.pattern);
+      if (voteMatch && engines.voteEngine.voteInProgress) {
+        try {
+          const voteResult = await engines.voteEngine.makeVoteByNumber(
+            parseInt(voteMatch[1]),
+            info.steamID
+          );
+          await server.rcon.warn(info.steamID, voteResult.message);
+        } catch (err) {
+          await server.rcon.warn(info.steamID, err.message);
+        }
+      }
 
       const commandMatch = info.message.match(MAPVOTE_EXTENDED_COMMANDS.common.mapvote.pattern);
-
-      console.log(commandMatch);
-      console.log(commandMatch.length);
-      console.log(commandMatch[0]);
 
       if (commandMatch) {
         if (info.chat === CHATS_ADMINCHAT) {
@@ -229,10 +218,7 @@ export default {
             await server.rcon.warn(info.steamID, '!mapvote start - Manually trigger vote process');
             await server.rcon.warn(info.steamID, '!mapvote auto-vote-info - Auto vote info');
             await server.rcon.warn(info.steamID, '!mapvote vote-info - Current vote details');
-            await server.rcon.warn(
-              info.steamID,
-              '!mapvote nominate-info - Current nominations list'
-            );
+            await server.rcon.warn(info.steamID, '!mapvote nominate-info - Current nominations');
           }
 
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.nominateInfo)) {
@@ -245,18 +231,19 @@ export default {
             }
           }
 
-          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.testNominate)) {
-            console.log(await engines.nomination.addNewNomination('Al Basrah Invasion v1', 1));
-            console.log(await engines.nomination.addNewNomination('Chora AAS v1', 2));
-            console.log(await engines.nomination.addNewNomination('Fallujah Invasion v1', 3));
-            console.log(await engines.nomination.addNewNomination("Fool's Road Invasion v1", 4));
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.voteInfo)) {
+            await server.rcon.warn(info.steamID, 'Vote info:');
 
-            var nominations = await engines.nomination.getNominationsForVote();
-            console.log(nominations);
+            var messages = await engines.voteEngine.getVotingInfo();
 
-            var votes = await engines.mapBasket.getMapsForVote(nominations);
+            for (let i = 0; i < messages.length; i++) {
+              await server.rcon.warn(info.steamID, messages[i]);
+            }
+          }
 
-            console.log(votes);
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.start)) {
+            engines.autoVote.triggerManually();
+            await server.rcon.warn(info.steamID, 'VoteMap started manually!');
           }
         } else {
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.help)) {
@@ -274,11 +261,22 @@ export default {
             );
           }
 
+          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.results)) {
+            if (engines.voteEngine.voteInProgress) {
+              await server.rcon.warn(info.steamID, `Vote in progress`);
+            } else {
+              var layer = engines.voteEngine.getResult();
+
+              if (layer === null) {
+                await server.rcon.warn(info.steamID, `Before vote`);
+              } else {
+                await server.rcon.warn(info.steamID, `The next map: ${layer}`);
+              }
+            }
+          }
+
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.nominate)) {
             var layerName = commandMatch[1].substr(commandMatch[1].indexOf(' ') + 1);
-
-            console.log('RESULT ');
-            console.log(layerName);
 
             var checkResult = engines.nomination.isNominationAvailable(info.steamID);
 
@@ -289,10 +287,6 @@ export default {
                 layerName,
                 info.steamID
               );
-
-              console.log('result');
-              console.log(nominationResult);
-              console.log(nominationResult.message);
 
               await server.rcon.warn(info.steamID, nominationResult.message);
             }

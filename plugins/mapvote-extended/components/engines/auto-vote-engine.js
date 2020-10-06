@@ -3,9 +3,8 @@
 // - Ticketow sie nie da
 
 import EventEmitter from 'events';
-import { A2S_INFO_UPDATED } from 'squad-server/events';
-import { START_VOTE } from 'mapvote-extended/constants';
 import { GetTimeText } from 'mapvote-extended/helpers';
+import { NOMINATION_START } from 'mapvote-extended/constants';
 
 export const AUTO_VOTE_TRIGGER_TYPE = {
   TICKET: 1, // How to obtain current ticket values?
@@ -14,13 +13,13 @@ export const AUTO_VOTE_TRIGGER_TYPE = {
 };
 
 export default class AutoVoteEngine extends EventEmitter {
-  constructor(server, options) {
+  constructor(options, synchro) {
     super();
 
     this.triggersCreated = false;
     this.nominateTriggerCreated = false;
 
-    this.server = server;
+    this.synchro = synchro;
 
     if (options === null) {
       this.isEnabled = false;
@@ -30,14 +29,13 @@ export default class AutoVoteEngine extends EventEmitter {
     }
 
     this.triggers = [];
+    setTimeout(() => {
+      this.startNewMap();
+    }, 5000);
 
-    // Not used, to verify can we obtain information about tickets left
-    server.on(A2S_INFO_UPDATED, () => {
-      //   console.log('Auto vote debug');
-      //   console.log(this.server.matchTimeout);
+    this.synchro.on(NOMINATION_START, (delayTime) => {
+      this.addNominateTrigger(delayTime);
     });
-
-    this.startNewMap();
   }
 
   startNewMap() {
@@ -46,17 +44,21 @@ export default class AutoVoteEngine extends EventEmitter {
     this.nominateTriggerCreated = false;
     this.setupTriggers();
 
-    console.log('Start interval');
-    // Check triggers every 30 seconds
+    this.synchro.startNewMap();
 
-    // setInterval(() => {
-
-    //   }, (30 * 60 * 1000));
+    console.log('[AUTO_VOTE_ENGINE] MAP STARTED');
 
     setInterval(async () => {
-      console.log('BAZUR');
       this.checkTriggers();
     }, 30 * 1000);
+  }
+
+  triggerManually() {
+    if (this.triggersCreated && this.triggers.length > 0) {
+      this.triggers = [];
+
+      this.synchro.triggerStartVote();
+    }
   }
 
   setupTriggers() {
@@ -86,6 +88,8 @@ export default class AutoVoteEngine extends EventEmitter {
           value: voteTimeDelay
         })
       );
+
+      this.synchro.nominationTriggerCreated();
     }
   }
 
@@ -110,8 +114,28 @@ export default class AutoVoteEngine extends EventEmitter {
     if (anyTriggerMet) {
       this.triggers = [];
 
-      this.emit(START_VOTE, true);
+      this.synchro.triggerStartVote();
     }
+  }
+
+  getEarliestTrigger() {
+    if (this.triggers.length === 0) {
+      return null;
+    }
+
+    var closestTrigger = null;
+
+    this.triggers.forEach((x) => {
+      if (closestTrigger === null) {
+        closestTrigger = x;
+      } else {
+        if (closestTrigger.triggerTime > x.triggerTime) {
+          closestTrigger = x;
+        }
+      }
+    });
+
+    return GetTimeText(closestTrigger.triggerTime);
   }
 
   getAutoVoteInfo() {

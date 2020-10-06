@@ -14,7 +14,7 @@ const MAPVOTE_EXTENDED_COMMANDS = {
     nominate: 'nominate'
   },
   admin: {
-    start: 'start',
+    start: 'start-manuall-vote',
     help: 'admin-help',
     autoVoteInfo: 'auto-vote-info',
     voteInfo: 'vote-info',

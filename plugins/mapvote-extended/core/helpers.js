@@ -3,8 +3,8 @@ export function GetTimeText(date) {
   var seconds = Math.floor(timeDiff / 1000);
 
   if (seconds > 60) {
-    return `${Math.floor(seconds / 60)}min`;
+    return `${Math.floor(seconds / 60)} min`;
   } else {
-    return `${seconds}sec`;
+    return `${seconds} sec`;
   }
 }

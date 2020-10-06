@@ -6,22 +6,33 @@
 import EventEmitter from 'events';
 import { GetTimeText } from 'mapvote-extended/helpers';
 import { SquadLayers } from 'core/squad-layers';
-import { NOMINATION_START } from 'mapvote-extended/constants';
+import { TRIGGER_START_VOTE, START_NEW_MAP } from 'mapvote-extended/constants';
 
 export default class NominateEngine extends EventEmitter {
-  constructor(server, options, mapBasket) {
+  constructor(options, mapBasket, synchro) {
     super();
 
     this.nominations = [];
     this.nominationTime = null;
 
     this.isVoteStarted = false;
+    this.nominationTriggerEmitted = false;
 
-    this.server = server;
+    this.synchro = synchro;
     this.options = new NominateOptions(options);
     this.mapBasketEngine = mapBasket;
 
+    console.log(this.options);
+
     this.newMap();
+
+    this.synchro.on(TRIGGER_START_VOTE, async () => {
+      await this.getNominationsForVote();
+    });
+
+    this.synchro.on(START_NEW_MAP, () => {
+      this.newMap();
+    });
   }
 
   newMap() {
@@ -29,16 +40,17 @@ export default class NominateEngine extends EventEmitter {
 
     this.nominationTime = new Date(new Date().getTime() + this.options.nominationDelayTime * 60000);
     this.isVoteStarted = false;
+    this.nominationTriggerEmitted = false;
   }
 
   isNominationAvailable(identifier) {
-    if (this.options.isEnabled) {
+    if (!this.options.isEnabled) {
       return { available: false, message: 'Nominate system is disabled' };
     }
     if (this.isVoteStarted) {
       return { available: false, message: 'Nomination is no longer possible' };
     }
-    if (new Date() < this.nominationTime) {
+    if (this.options.nominationDelayEnabled && new Date() < this.nominationTime) {
       return {
         available: false,
         message: `Nominations will be available in ${GetTimeText(this.nominationTime)}`
@@ -73,8 +85,12 @@ export default class NominateEngine extends EventEmitter {
         this.nominations.push(new Nomination(layer, identifier));
       }
 
-      if (this.options.isNominationTriggerVote && this.nominations.length === 0) {
-        this.emit(NOMINATION_START, true);
+      console.log(this.options.isNominationTriggerVote);
+      console.log(this.nominationTriggerEmitted);
+
+      if (this.options.isNominationTriggerVote && !this.nominationTriggerEmitted) {
+        this.nominationTriggerEmitted = true;
+        this.synchro.startNominate(this.options.voteDelayAfterFirstNominate);
       }
 
       return { message: `Nominated ${layer}` };
@@ -116,7 +132,7 @@ export default class NominateEngine extends EventEmitter {
 
     this.isVoteStarted = true;
 
-    return nominations;
+    this.synchro.nominationFetched(nominations);
   }
 }
 

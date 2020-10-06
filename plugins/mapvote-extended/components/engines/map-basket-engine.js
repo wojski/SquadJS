@@ -1,14 +1,20 @@
 import { SquadLayers } from 'core/squad-layers';
+import { NOMINATION_FETCH } from 'mapvote-extended/constants';
 
 // Ten engine ma za zadanie obslugiwac informacje o mapach:
 // - Zwracac mape "did you mean logika"
 // - Zwracac liste dostępnych map w aktualnym losowaniu
 
 export default class MapBasketEngine {
-  constructor(server, options, layerFilter) {
+  constructor(server, options, layerFilter, synchro) {
     this.server = server;
     this.multipleLayersFromSameMap = options.multipleLayersFromSameMap;
     this.squadLayerFilter = layerFilter;
+    this.synchro = synchro;
+
+    this.synchro.on(NOMINATION_FETCH, async (nominations) => {
+      await this.getMapsForVote(nominations);
+    });
   }
 
   async isLayerAvailable(layerName) {
@@ -89,9 +95,6 @@ export default class MapBasketEngine {
 
     var i = 0;
 
-    console.log('4 random maps from basket');
-    console.log(randomizedMaps);
-
     do {
       if (nominations.length > i) {
         mapsToVote.push(nominations[i].layer);
@@ -114,6 +117,9 @@ export default class MapBasketEngine {
       }
     }
 
-    return results;
+    console.log('4 random maps to vote');
+    console.log(results);
+
+    this.synchro.finalMapsFetched(results);
   }
 }
