@@ -1,10 +1,6 @@
 import { SquadLayers } from 'core/squad-layers';
 import { NOMINATION_FETCH } from 'mapvote-extended/constants';
 
-// Ten engine ma za zadanie obslugiwac informacje o mapach:
-// - Zwracac mape "did you mean logika"
-// - Zwracac liste dostępnych map w aktualnym losowaniu
-
 export default class MapBasketEngine {
   constructor(server, options, layerFilter, synchro) {
     this.server = server;
@@ -113,7 +109,7 @@ export default class MapBasketEngine {
       var lr = mapsToVote[Math.floor(Math.random() * mapsToVote.length)];
 
       if (!results.some((x) => x.layer === lr)) {
-        results.push({ id: results.length + 1, layer: lr });
+        results.push({ id: results.length + 1, layer: lr, votes: 0 });
       }
     }
 

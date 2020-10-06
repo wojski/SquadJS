@@ -39,7 +39,7 @@ export default {
        * <code><layer number></code> - Vote for a layer using the layer number.\n
       \n\n 
       Admin Commands (Admin Chat Only):\n 
-       * <code>!mapvote start</code> - Manually trigger vote process.\n
+       * <code>!mapvote start-manual-vote</code> - Manually trigger vote process.\n
        * <code>!mapvote auto-vote-info</code> - Auto vote info.\n
        * <code>!mapvote vote-info</code> - Current vote details.\n
        * <code>!mapvote nominate-info</code> - Current nominations.\n
@@ -183,8 +183,15 @@ export default {
     const engines = new EnginesBuilder(server, options).Build();
 
     server.on(NEW_GAME, () => {
+      console.log('[MAPVOTE_EXENDED] NEW MAP');
       engines.autoVote.startNewMap();
     });
+
+    // Keep to investigate (sometime NEW_GAME not triggered)
+    // server.on(LAYER_CHANGE, () => {
+    //   console.log('[MAPVOTE_EXENDED] LAYER CHANGE');
+    //   // engines.autoVote.startNewMap();
+    // });
 
     server.on(CHAT_MESSAGE, async (info) => {
       const voteMatch = info.message.match(MAPVOTE_EXTENDED_COMMANDS.common.vote.pattern);
@@ -242,8 +249,11 @@ export default {
           }
 
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.start)) {
-            engines.autoVote.triggerManually();
-            await server.rcon.warn(info.steamID, 'VoteMap started manually!');
+            if (engines.autoVote.triggerManually()) {
+              await server.rcon.warn(info.steamID, 'VoteMap started manually!');
+            } else {
+              await server.rcon.warn(info.steamID, 'VoteMap map already happened!');
+            }
           }
         } else {
           if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.help)) {
@@ -292,125 +302,7 @@ export default {
             }
           }
         }
-
-        // if (commandMatch[1].startsWith('start')) {
-
-        //   if (mapvote) {
-        //     await server.rcon.warn(info.steamID, 'A mapvote has already begun.');
-        //   } else {
-        //     mapvote = new MapVote(
-        //       server,
-        //       SquadLayerFilter.buildFromDidYouMeanList(
-        //         commandMatch[1].replace('start ', '').split(', ')
-        //       ),
-        //       { minVoteCount: options.minVoteCount }
-        //     );
-
-        //     mapvote.on('NEW_WINNER', async (results) => {
-        //       await server.rcon.broadcast(
-        //         `New Map Vote Winner: ${results[0].layer.layer}. Participate in the map vote by typing "!mapvote help" in chat.`
-        //       );
-        //     });
-
-        //     await server.rcon.broadcast(
-        //       `A new map vote has started. Participate in the map vote by typing "!mapvote help" in chat. Map options to follow...`
-        //     );
-        //     await server.rcon.broadcast(
-        //       mapvote.squadLayerFilter
-        //         .getLayerNames()
-        //         .map((layerName, key) => `${key + 1} - ${layerName}`)
-        //         .join(', ')
-        //     );
-        //   }
-        //   return;
-        // }
       }
-
-      //   if (!mapvote) {
-      //     await server.rcon.warn(info.steamID, 'A map vote has not begun.');
-      //     return;
-      //   }
-
-      //   if (commandMatch[1] === 'restart') {
-      //     if (info.chat !== 'ChatAdmin') return;
-
-      //     mapvote = new MapVote(server, mapvote.squadLayerFilter, {
-      //       minVoteCount: options.minVoteCount
-      //     });
-
-      //     mapvote.on('NEW_WINNER', async (results) => {
-      //       await server.rcon.broadcast(
-      //         `New Map Vote Winner: ${results[0].layer}. Participate in the map vote by typing "!mapvote help" in chat.`
-      //       );
-      //     });
-
-      //     await server.rcon.broadcast(
-      //       `A new map vote has started. Participate in the map vote by typing "!mapvote help" in chat. Map options to follow...`
-      //     );
-      //     await server.rcon.broadcast(
-      //       mapvote.squadLayerFilter
-      //         .getLayerNames()
-      //         .map((layerName, key) => `${key + 1} - ${layerName}`)
-      //         .join(', ')
-      //     );
-      //     return;
-      //   }
-
-      //   if (commandMatch[1] === 'end') {
-      //     if (info.chat !== 'ChatAdmin') return;
-
-      //     const results = mapvote.getResults();
-
-      //     if (results.length === 0)
-      //       await server.rcon.broadcast(`No layer gained enough votes to win.`);
-      //     else
-      //       await server.rcon.broadcast(`${mapvote.getResults()[0].layer.layer} won the mapvote!`);
-
-      //     mapvote = null;
-      //     return;
-      //   }
-
-      //   if (commandMatch[1] === 'destroy') {
-      //     if (info.chat !== 'ChatAdmin') return;
-      //     mapvote = null;
-      //     return;
-      //   }
-
-      //   if (commandMatch[1] === 'help') {
-      //     await server.rcon.warn(info.steamID, 'To vote type the layer number into chat:');
-      //     for (const layer of mapvote.squadLayerFilter.getLayers()) {
-      //       await server.rcon.warn(info.steamID, `${layer.layerNumber} - ${layer.layer}`);
-      //     }
-
-      //     if (options.minVoteCount !== null)
-      //       await server.rcon.warn(
-      //         info.steamID,
-      //         `${options.minVoteCount} votes need to be made for a winner to be selected.`
-      //       );
-
-      //     await server.rcon.warn(
-      //       info.steamID,
-      //       'To see current results type into chat: !mapvote results'
-      //     );
-      //   }
-
-      //   if (commandMatch[1] === 'results') {
-      //     const results = mapvote.getResults();
-
-      //     if (results.length === 0) {
-      //       await server.rcon.warn(info.steamID, 'No one has voted yet.');
-      //     } else {
-      //       await server.rcon.warn(info.steamID, 'The current vote counts are as follows:');
-      //       for (const result of results) {
-      //         await server.rcon.warn(
-      //           info.steamID,
-      //           `${result.layer.layerNumber} - ${result.layer.layer} (${result.votes} vote${result.votes > 1 ? 's' : ''
-      //           })`
-      //         );
-      //       }
-      //     }
-      //   }
-      // }
     });
   }
 };

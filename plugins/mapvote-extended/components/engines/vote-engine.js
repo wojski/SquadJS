@@ -1,10 +1,3 @@
-// Ten engine ma za zadanie obsluzyc caly proces glosowania
-// - Vote start
-// - Vote end
-// - Status
-// - Set map
-// - Vote in progress
-// - Vote ended
 import EventEmitter from 'events';
 import { FINAL_MAP_FETCH } from 'mapvote-extended/constants';
 import { GetTimeText } from 'mapvote-extended/helpers';
@@ -37,17 +30,25 @@ export default class VoteEngine extends EventEmitter {
     this.voteEndTime = new Date(new Date().getTime() + this.voteTime * 60000);
     this.winningMap = null;
 
-    setTimeout(() => this.endVote, this.voteTime * 60 * 1000);
+    setTimeout(() => {
+      this.endVote();
+    }, this.voteTime * 60 * 1000);
 
     this.synchro.startVote();
   }
 
   endVote() {
+    console.log('[VOTE ENGINE] END VOTE');
+
     this.voteInProgress = false;
 
     var option = null;
 
     this.options.forEach((x) => {
+      if (option === null) {
+        option = x;
+      }
+
       if (option.votes < x.votes) {
         option = x;
       }
@@ -93,6 +94,10 @@ export default class VoteEngine extends EventEmitter {
     var option = null;
 
     this.options.forEach((x) => {
+      if (option === null) {
+        option = x;
+      }
+
       if (option.votes < x.votes) {
         option = x;
       }
@@ -111,18 +116,17 @@ export default class VoteEngine extends EventEmitter {
         return { confirmed: false, message: 'Already voted' };
       }
 
-      this.voters.push(identifier);
+      var filteredOptions = this.options.filter((x) => x.id === number);
+      if (filteredOptions.length > 0) {
+        filteredOptions[0].votes += 1;
+        this.voters.push(identifier);
 
-      var option = this.options.filter((x) => x.id === number);
-      console.log(`Number: ${number}, Option: ${option}`);
-      console.log(option);
-      console.log(option[0]);
+        await this.setWinningMap();
 
-      option[0].votes += 1;
+        console.log(filteredOptions);
 
-      await this.setWinningMap();
-
-      return { confirmed: false, message: `You voted for ${option[0].layer}` };
+        return { confirmed: true, message: `You voted for ${filteredOptions[0].layer}` };
+      }
     }
   }
 }

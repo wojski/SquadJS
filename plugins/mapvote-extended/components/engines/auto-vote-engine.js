@@ -1,6 +1,7 @@
-// Ten hypervisor ma na celu automatyczne triggerowanie vote
-// - Po rozpoczęciu mapy na podstawie opcji ustawić kiedy ma zostać striggerowany vote
-// - Ticketow sie nie da
+/*
+  This engine duty is to trigger vote process.
+  It can has multiple configured trigger and as soon as any meet condition process will start.
+*/
 
 import EventEmitter from 'events';
 import { GetTimeText } from 'mapvote-extended/helpers';
@@ -58,6 +59,9 @@ export default class AutoVoteEngine extends EventEmitter {
       this.triggers = [];
 
       this.synchro.triggerStartVote();
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -168,7 +172,7 @@ export class AutoVoteTimeTrigger {
   constructor(template) {
     this.type = template.type;
     this.name = template.name;
-    this.triggerTime = new Date(new Date().getTime() + template.value * 60000); // TO check how it's working
+    this.triggerTime = new Date(new Date().getTime() + template.value * 60000);
   }
 
   getTriggerTime() {

@@ -14,12 +14,11 @@ const MAPVOTE_EXTENDED_COMMANDS = {
     nominate: 'nominate'
   },
   admin: {
-    start: 'start-manuall-vote',
+    start: 'start-manual-vote',
     help: 'admin-help',
     autoVoteInfo: 'auto-vote-info',
     voteInfo: 'vote-info',
-    nominateInfo: 'nominate-info',
-    testNominate: 'test-nominate'
+    nominateInfo: 'nominate-info'
   }
 };
 

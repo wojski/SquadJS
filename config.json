@@ -178,6 +178,35 @@
       "minVoteCount": null
     },
     {
+      "plugin": "mapvote-extended",
+      "enabled": false,
+      "voteTime": 3,
+      "layerFilter": "layerFilter",
+      "multipleLayersFromSameMap": true,
+      "autoVoting": {
+        "isEnabled": true,
+        "triggers": [
+          {
+            "name": "timeTrigger",
+            "type": 2,
+            "value": 15
+          }
+        ]
+      },
+      "nomination": {
+        "isEnabled": true,
+        "isNominationTriggerVote": true,
+        "voteDelayAfterFirstNominate": 5
+      },
+      "broadcast": {
+        "enablefirstInformationBroadcasting": true,
+        "firstInformationBroadcastingDelay": 1,
+        "enableNominationBroadcasting": true,
+        "enableVoteStatusBroadcasting": true,
+        "voteStatusBroadcastingDelay": 30
+      }
+    },
+    {
       "plugin": "mysql-log",
       "enabled": false,
       "mysqlPool": "mysql",
