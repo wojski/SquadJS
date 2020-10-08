@@ -52,7 +52,8 @@ export default class BroadcastEngine extends EventEmitter {
       var triggerTime = this.autoVoteEngine.getEarliestTrigger();
       if (triggerTime != null) {
         this.server.rcon.execute(
-          `AdminBroadcast Votemap will start in ${triggerTime}. You can find more information about votemap by use <!mapvote help>`
+          `AdminBroadcast Votemap will start in ${triggerTime}.
+           You can find more information about votemap by use <!mapvote help>`
         );
       }
     }
@@ -73,7 +74,7 @@ export default class BroadcastEngine extends EventEmitter {
   }
 
   voteEndBroadcast(layer) {
-    this.server.rcon.execute(`AdminBroadcast Votemap ended, the next map will be ${layer}.`);
+    this.server.rcon.execute(`AdminBroadcast Votemap ended, the next map will be \n ${layer}.`);
   }
 }
 

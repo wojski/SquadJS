@@ -117,7 +117,8 @@ export default class NominateEngine extends EventEmitter {
 
     this.nominations.forEach((x) => {
       var item = nominations.filter((itm) => itm.layer === x.layer);
-      if (item.length > 0) {
+
+      if (item != null && item.length > 0) {
         item.count += 1;
         item.players.push(x.identifier);
       } else {

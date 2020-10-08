@@ -278,7 +278,10 @@ export default {
               var layer = engines.voteEngine.getResult();
 
               if (layer === null) {
-                await server.rcon.warn(info.steamID, `Before vote`);
+                await server.rcon.warn(
+                  info.steamID,
+                  `Vote will start in ${engines.autoVote.getEarliestTrigger()}`
+                );
               } else {
                 await server.rcon.warn(info.steamID, `The next map: ${layer}`);
               }

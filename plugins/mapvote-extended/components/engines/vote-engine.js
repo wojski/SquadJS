@@ -58,18 +58,13 @@ export default class VoteEngine extends EventEmitter {
   }
 
   getVotingMessage() {
-    var message = 'Votemap started. Vote by type number in chat. ';
-
-    var i = 1;
+    var message = 'Votemap started. Vote by type number in chat. \n';
 
     this.options.forEach((x) => {
-      message += ` ${x.id}. ${x.layer}`;
-      if (i < 4) {
-        message += ' |';
-      }
+      message += ` ${x.id}. ${x.layer} \n`;
     });
 
-    message += ` Time left: ${GetTimeText(this.voteEndTime)}`;
+    message += `Time left: ${GetTimeText(this.voteEndTime)}`;
 
     return message;
   }
