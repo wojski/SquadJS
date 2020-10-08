@@ -52,7 +52,7 @@ export default class BroadcastEngine extends EventEmitter {
       var triggerTime = this.autoVoteEngine.getEarliestTrigger();
       if (triggerTime != null) {
         this.server.rcon.execute(
-          `AdminBroadcast Votemap will start in ${triggerTime}.
+          `AdminBroadcast [MAPVOTE] Votemap will start in ${triggerTime}.
            You can find more information about votemap by use <!mapvote help>`
         );
       }
@@ -60,21 +60,25 @@ export default class BroadcastEngine extends EventEmitter {
   }
 
   voteStartBroadcast() {
-    this.server.rcon.execute(`AdminBroadcast ${this.voteEngine.getVotingMessage()}`);
+    this.server.rcon.execute(`AdminBroadcast [MAPVOTE] ${this.voteEngine.getVotingMessage()}`);
 
     if (this.options.enableVoteStatusBroadcasting) {
       var interval = setInterval(() => {
         if (!this.voteEngine.voteInProgress) {
           clearInterval(interval);
         } else {
-          this.server.rcon.execute(`AdminBroadcast ${this.voteEngine.getVotingMessage()}`);
+          this.server.rcon.execute(
+            `AdminBroadcast [MAPVOTE] ${this.voteEngine.getVotingMessage()}`
+          );
         }
       }, this.options.voteStatusBroadcastingDelay * 1000);
     }
   }
 
   voteEndBroadcast(layer) {
-    this.server.rcon.execute(`AdminBroadcast Votemap ended, the next map will be \n ${layer}.`);
+    this.server.rcon.execute(
+      `AdminBroadcast [MAPVOTE] Votemap ended, the next map will be \n ${layer}.`
+    );
   }
 }
 
