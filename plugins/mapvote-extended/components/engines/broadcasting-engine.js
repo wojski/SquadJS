@@ -15,6 +15,7 @@ export default class BroadcastEngine extends EventEmitter {
     this.voteEngine = voteEngine;
     this.options = new BroadcastOptions(options);
     this.synchro = synchro;
+    this.startMessage = null;
 
     this.synchro.on(START_NEW_MAP, () => {
       this.mapStartBroadcast();
@@ -35,7 +36,10 @@ export default class BroadcastEngine extends EventEmitter {
 
   mapStartBroadcast() {
     if (this.options.enablefirstInformationBroadcasting) {
-      setTimeout(() => {
+      if (this.startMessage != null) {
+        clearTimeout(this.startMessage);
+      }
+      this.startMessage = setTimeout(() => {
         this.votemapInfo();
       }, this.options.firstInformationBroadcastingDelay * 60 * 1000);
     }
@@ -48,18 +52,22 @@ export default class BroadcastEngine extends EventEmitter {
   }
 
   votemapInfo() {
-    if (!this.voteEngine.voteInProgress) {
+    if (!this.voteEngine.voteInProgress && this.synchro.isPluginEnabled) {
       var triggerTime = this.autoVoteEngine.getEarliestTrigger();
       if (triggerTime != null) {
         this.server.rcon.execute(
           `AdminBroadcast [MAPVOTE] Votemap will start in ${triggerTime}.
-           You can find more information about votemap by use <!mapvote help>`
+You can find more information about votemap by use <!mapvote help>`
         );
       }
     }
   }
 
   voteStartBroadcast() {
+    if (!this.synchro.isPluginEnabled) {
+      return;
+    }
+
     this.server.rcon.execute(`AdminBroadcast [MAPVOTE] ${this.voteEngine.getVotingMessage()}`);
 
     if (this.options.enableVoteStatusBroadcasting) {
@@ -76,6 +84,10 @@ export default class BroadcastEngine extends EventEmitter {
   }
 
   voteEndBroadcast(layer) {
+    if (!this.synchro.isPluginEnabled) {
+      return;
+    }
+
     this.server.rcon.execute(
       `AdminBroadcast [MAPVOTE] Votemap ended, the next map will be \n ${layer}.`
     );

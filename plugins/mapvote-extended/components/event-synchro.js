@@ -7,10 +7,17 @@ import {
   NOMINATION_FETCH,
   FINAL_MAP_FETCH,
   TRIGGER_START_VOTE,
-  NOMINATION_TRIGGER_CREATED
+  NOMINATION_TRIGGER_CREATED,
+  PLUGIN_STATE_SWITCH
 } from 'mapvote-extended/constants';
 
 export class EventSynchro extends EventEmitter {
+  constructor() {
+    super();
+
+    this.isPluginEnabled = true;
+  }
+
   startNewMap() {
     console.log(`[SYNC] ${START_NEW_MAP}`);
     this.emit(START_NEW_MAP, true);
@@ -54,5 +61,13 @@ export class EventSynchro extends EventEmitter {
     console.log(`[SYNC] ${END_VOTE}`);
 
     this.emit(END_VOTE, layer);
+  }
+
+  switchPlugin() {
+    console.log(`[SYNC] ${PLUGIN_STATE_SWITCH}`);
+
+    this.isPluginEnabled = !this.isPluginEnabled;
+
+    this.emit(PLUGIN_STATE_SWITCH, this.isPluginEnabled);
   }
 }

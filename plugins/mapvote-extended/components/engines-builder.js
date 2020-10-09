@@ -31,6 +31,7 @@ export default class EnginesBuilder {
       voteEngine
     );
     const engines = {
+      synchro: synchro,
       autoVote: autoVoteEngine,
       nomination: nominateEngine,
       broadcastEngine: broadcastingEngine,

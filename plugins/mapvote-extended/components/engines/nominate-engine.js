@@ -1,7 +1,7 @@
 import EventEmitter from 'events';
 import { GetTimeText } from 'mapvote-extended/helpers';
 import { SquadLayers } from 'core/squad-layers';
-import { TRIGGER_START_VOTE, START_NEW_MAP } from 'mapvote-extended/constants';
+import { TRIGGER_START_VOTE, START_NEW_MAP, PLUGIN_STATE_SWITCH } from 'mapvote-extended/constants';
 
 export default class NominateEngine extends EventEmitter {
   constructor(options, mapBasket, synchro) {
@@ -17,8 +17,6 @@ export default class NominateEngine extends EventEmitter {
     this.options = new NominateOptions(options);
     this.mapBasketEngine = mapBasket;
 
-    console.log(this.options);
-
     this.newMap();
 
     this.synchro.on(TRIGGER_START_VOTE, async () => {
@@ -27,6 +25,12 @@ export default class NominateEngine extends EventEmitter {
 
     this.synchro.on(START_NEW_MAP, () => {
       this.newMap();
+    });
+
+    this.synchro.on(PLUGIN_STATE_SWITCH, (state) => {
+      if (!state) {
+        this.nominations = []; // Cleanup nominations
+      }
     });
   }
 

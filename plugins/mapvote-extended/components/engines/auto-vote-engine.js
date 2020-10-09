@@ -5,7 +5,7 @@
 
 import EventEmitter from 'events';
 import { GetTimeText } from 'mapvote-extended/helpers';
-import { NOMINATION_START } from 'mapvote-extended/constants';
+import { NOMINATION_START, PLUGIN_STATE_SWITCH } from 'mapvote-extended/constants';
 
 export const AUTO_VOTE_TRIGGER_TYPE = {
   TICKET: 1, // How to obtain current ticket values?
@@ -38,6 +38,12 @@ export default class AutoVoteEngine extends EventEmitter {
 
     this.synchro.on(NOMINATION_START, (delayTime) => {
       this.addNominateTrigger(delayTime);
+    });
+
+    this.synchro.on(PLUGIN_STATE_SWITCH, (state) => {
+      if (!state) {
+        this.triggers = []; // Cleanup triggers
+      }
     });
   }
 
@@ -106,12 +112,12 @@ export default class AutoVoteEngine extends EventEmitter {
       return;
     }
 
-    console.log('Trigger check');
+    // console.log('Trigger check');
 
     let anyTriggerMet = false;
 
     for (let i = 0; i < this.triggers.length; i++) {
-      console.log(`Trigger: ${this.triggers[i].name}`);
+      // console.log(`Trigger: ${this.triggers[i].name}`);
 
       if (this.triggers[i].isReadyToTrigger()) {
         anyTriggerMet = true;
