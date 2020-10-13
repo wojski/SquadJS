@@ -109,7 +109,17 @@ export default class MapBasketEngine {
       var lr = mapsToVote[Math.floor(Math.random() * mapsToVote.length)];
 
       if (!results.some((x) => x.layer === lr)) {
-        results.push({ id: results.length + 1, layer: lr, votes: 0 });
+        var fullLr = SquadLayers.getLayerByDidYouMean(lr);
+
+        results.push({
+          id: results.length + 1,
+          layer: lr,
+          teamsInfo: `${fullLr.teamOne.faction.substring(
+            0,
+            3
+          )} - ${fullLr.teamTwo.faction.substring(0, 3)}`,
+          votes: 0
+        });
       }
     }
 

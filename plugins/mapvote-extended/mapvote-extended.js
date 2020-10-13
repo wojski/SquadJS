@@ -353,6 +353,11 @@ export default {
             if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.results)) {
               if (engines.voteEngine.voteInProgress) {
                 await server.rcon.warn(info.steamID, `Vote in progress`);
+                var voteResults = await engines.voteEngine.getVotingInfo();
+
+                for (let i = 0; i < voteResults.length; i++) {
+                  await server.rcon.warn(info.steamID, voteResults[i]);
+                }
               } else {
                 var layer = engines.voteEngine.getResult();
 

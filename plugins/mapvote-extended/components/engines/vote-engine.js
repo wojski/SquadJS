@@ -69,10 +69,10 @@ export default class VoteEngine extends EventEmitter {
   }
 
   getVotingMessage() {
-    var message = 'Votemap started. Vote by type number in chat. \n';
+    var message = 'Type number in chat. \n';
 
     this.options.forEach((x) => {
-      message += ` ${x.id}. ${x.layer} - [${x.votes}] votes \n`;
+      message += `${x.id}. ${x.layer} (${x.teamsInfo})\n`;
     });
 
     message += `Time left: ${GetTimeText(this.voteEndTime)}`;
@@ -84,7 +84,7 @@ export default class VoteEngine extends EventEmitter {
     var messages = [];
 
     this.options.forEach((x) => {
-      messages.push(` ${x.id}. ${x.layer} | votes: ${x.votes}`);
+      messages.push(` ${x.id}. ${x.layer} | (${x.teamsInfo}) | ${x.votes} - votes`);
     });
 
     messages.push(`Voters: ${this.voters.length}`);

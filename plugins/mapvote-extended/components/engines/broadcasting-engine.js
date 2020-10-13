@@ -25,8 +25,8 @@ export default class BroadcastEngine extends EventEmitter {
       this.voteEndBroadcast(layer);
     });
 
-    this.synchro.on(START_VOTE, () => {
-      this.voteStartBroadcast();
+    this.synchro.on(START_VOTE, async () => {
+      await this.voteStartBroadcast();
     });
 
     this.synchro.on(NOMINATION_TRIGGER_CREATED, () => {
@@ -64,7 +64,7 @@ You can find more information about votemap by use "!mapvote help".`
     }
   }
 
-  voteStartBroadcast() {
+  async voteStartBroadcast() {
     if (!this.synchro.isPluginEnabled) {
       return;
     }
@@ -72,11 +72,11 @@ You can find more information about votemap by use "!mapvote help".`
     this.server.rcon.execute(`AdminBroadcast [MAPVOTE] ${this.voteEngine.getVotingMessage()}`);
 
     if (this.options.enableVoteStatusBroadcasting) {
-      var interval = setInterval(() => {
+      var interval = await setInterval(async () => {
         if (!this.voteEngine.voteInProgress) {
           clearInterval(interval);
         } else {
-          this.server.rcon.execute(
+          await this.server.rcon.execute(
             `AdminBroadcast [MAPVOTE] ${this.voteEngine.getVotingMessage()}`
           );
         }
