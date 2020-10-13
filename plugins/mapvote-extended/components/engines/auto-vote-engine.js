@@ -17,9 +17,6 @@ export default class AutoVoteEngine extends EventEmitter {
   constructor(options, synchro) {
     super();
 
-    this.triggersCreated = false;
-    this.nominateTriggerCreated = false;
-
     this.synchro = synchro;
 
     if (options === null) {
@@ -29,46 +26,37 @@ export default class AutoVoteEngine extends EventEmitter {
       this.triggersDefinition = options.triggers;
     }
 
-    this.triggerInterval = null;
-
     this.triggers = [];
-    setTimeout(() => {
-      this.startNewMap();
-    }, 5000);
 
     this.synchro.on(NOMINATION_START, (delayTime) => {
-      this.addNominateTrigger(delayTime);
+      this.addTrigger(delayTime, AUTO_VOTE_TRIGGER_TYPE.NOMINATE);
     });
 
     this.synchro.on(PLUGIN_STATE_SWITCH, (state) => {
       if (!state) {
-        this.triggers = []; // Cleanup triggers
+        this.triggers.forEach((x) => {
+          x.disableTrigger();
+        });
       }
     });
   }
 
   startNewMap() {
+    if (!this.isEnabled) {
+      return;
+    }
+
     this.triggers = [];
-    this.triggersCreated = false;
-    this.nominateTriggerCreated = false;
     this.setupTriggers();
 
     this.synchro.startNewMap();
 
     console.log('[AUTO_VOTE_ENGINE] MAP STARTED');
-
-    clearInterval(this.triggerInterval);
-
-    this.triggerInterval = setInterval(async () => {
-      this.checkTriggers();
-    }, 30 * 1000);
   }
 
   triggerManually() {
-    if (this.triggersCreated && this.triggers.length > 0) {
-      this.triggers = [];
-
-      this.synchro.triggerStartVote();
+    if (this.triggers.length > 0 && this.triggers.find((x) => x.active)) {
+      this.triggerStartVote();
       return true;
     } else {
       return false;
@@ -76,70 +64,65 @@ export default class AutoVoteEngine extends EventEmitter {
   }
 
   setupTriggers() {
-    if (this.isEnabled) {
-      if (this.triggersCreated) {
-        return;
-      }
-
-      this.triggersCreated = true;
-
-      this.triggersDefinition.forEach((trigger) => {
-        if (trigger.type === AUTO_VOTE_TRIGGER_TYPE.TIME) {
-          this.triggers.push(new AutoVoteTimeTrigger(trigger)); // verify this?
-        }
-      });
+    if (this.triggers.length > 0) {
+      return;
     }
+
+    this.triggersDefinition.forEach((trigger) => {
+      if (trigger.type === AUTO_VOTE_TRIGGER_TYPE.TIME) {
+        this.addTrigger(trigger.value, trigger.type);
+      }
+    });
   }
 
-  addNominateTrigger(voteTimeDelay) {
-    if (!this.nominateTriggerCreated) {
-      this.nominateTriggerCreated = true;
+  addTrigger(voteTimeDelay, type) {
+    if (
+      type === AUTO_VOTE_TRIGGER_TYPE.NOMINATE &&
+      this.triggers.find((x) => x.type === AUTO_VOTE_TRIGGER_TYPE.NOMINATE)
+    ) {
+      return;
+    }
 
-      this.triggers.push(
-        new AutoVoteTimeTrigger({
-          type: AUTO_VOTE_TRIGGER_TYPE.NOMINATE,
-          name: 'nominateTrigger',
+    var trigger = setTimeout(() => {
+      this.triggerStartVote();
+    }, voteTimeDelay * 60 * 1000);
+
+    this.triggers.push(
+      new AutoVoteTimeTrigger(
+        {
+          type: type,
+          name: this.translateTriggerType(type),
           value: voteTimeDelay
-        })
-      );
+        },
+        trigger
+      )
+    );
 
+    if (type === AUTO_VOTE_TRIGGER_TYPE.NOMINATE) {
       this.synchro.nominationTriggerCreated();
     }
   }
 
-  checkTriggers() {
-    if (this.triggers.length === 0) {
-      return;
-    }
+  triggerStartVote() {
+    this.triggers.forEach((x) => {
+      x.disableTrigger();
+    });
 
-    // console.log('Trigger check');
-
-    let anyTriggerMet = false;
-
-    for (let i = 0; i < this.triggers.length; i++) {
-      // console.log(`Trigger: ${this.triggers[i].name}`);
-
-      if (this.triggers[i].isReadyToTrigger()) {
-        anyTriggerMet = true;
-        break;
-      }
-    }
-
-    if (anyTriggerMet) {
-      this.triggers = [];
-
-      this.synchro.triggerStartVote();
-    }
+    this.synchro.triggerStartVote();
   }
 
   getEarliestTrigger() {
-    if (this.triggers.length === 0) {
+    if (this.triggers.length === 0 || !this.triggers.find((x) => x.active)) {
       return null;
     }
 
     var closestTrigger = null;
 
     this.triggers.forEach((x) => {
+      if (!x.active) {
+        return;
+      }
+
       if (closestTrigger === null) {
         closestTrigger = x;
       } else {
@@ -157,9 +140,9 @@ export default class AutoVoteEngine extends EventEmitter {
 
     this.triggers.forEach((trigger) => {
       info.push(
-        `${trigger.name} | ${this.translateTriggerType(trigger.type)} | In: ${GetTimeText(
-          trigger.triggerTime
-        )}`
+        `${trigger.name} | ${this.translateTriggerType(trigger.type)} | Active: ${
+          trigger.active
+        } | In: ${GetTimeText(trigger.triggerTime)}`
       );
     });
 
@@ -176,20 +159,27 @@ export default class AutoVoteEngine extends EventEmitter {
         return 'NOMINATE';
     }
   }
+
+  isAutoVoteStarted() {
+    return this.triggers.find((x) => x.active);
+  }
 }
 
 export class AutoVoteTimeTrigger {
-  constructor(template) {
+  constructor(template, trigger) {
     this.type = template.type;
     this.name = template.name;
     this.triggerTime = new Date(new Date().getTime() + template.value * 60000);
+    this.trigger = trigger;
+    this.active = true;
+  }
+
+  disableTrigger() {
+    clearTimeout(this.trigger);
+    this.active = false;
   }
 
   getTriggerTime() {
     return this.triggerTime;
-  }
-
-  isReadyToTrigger() {
-    return new Date() > this.triggerTime;
   }
 }

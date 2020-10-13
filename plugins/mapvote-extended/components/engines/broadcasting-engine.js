@@ -57,7 +57,8 @@ export default class BroadcastEngine extends EventEmitter {
       if (triggerTime != null) {
         this.server.rcon.execute(
           `AdminBroadcast [MAPVOTE] Votemap will start in ${triggerTime}.
-You can find more information about votemap by use <!mapvote help>`
+Nominate with "!nominate <layer name>".
+You can find more information about votemap by use "!mapvote help".`
         );
       }
     }

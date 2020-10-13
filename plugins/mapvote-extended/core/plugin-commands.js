@@ -4,6 +4,10 @@ const MAPVOTE_EXTENDED_COMMANDS = {
       text: 'mapvote',
       pattern: /^!mapvote ?(.*)/
     },
+    nominate: {
+      text: 'nominate',
+      pattern: /^!nominate ?(.*)/
+    },
     vote: {
       pattern: /^([0-9])/
     }

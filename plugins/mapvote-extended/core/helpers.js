@@ -1,4 +1,8 @@
 export function GetTimeText(date) {
+  if (new Date() - date > 0) {
+    return '0 sec';
+  }
+
   var timeDiff = Math.abs(new Date() - date);
   var seconds = Math.floor(timeDiff / 1000);
 

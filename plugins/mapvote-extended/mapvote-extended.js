@@ -35,7 +35,7 @@ export default {
       Player Commands:\n
        * <code>!mapvote help</code> - Show other commands players can use.\n
        * <code>!mapvote results</code> - Show the results of the current map vote.\n
-       * <code>!mapvote nominate <layer></code> - Nominate the layer to the upcoming voting.\n
+       * <code>!nominate <layer></code> - Nominate the layer to the upcoming voting.\n
        * <code><layer number></code> - Vote for a layer using the layer number.\n
       \n\n 
       Admin Commands (Admin Chat Only):\n 
@@ -185,10 +185,6 @@ export default {
   init: async (server, options) => {
     const engines = new EnginesBuilder(server, options).Build();
 
-    // server.on(A2S_INFO_UPDATED, (obj) => {
-    //   console.log(obj)
-    // });
-
     server.on(NEW_GAME, () => {
       console.log('[MAPVOTE_EXTENDED] NEW MAP');
 
@@ -212,158 +208,167 @@ export default {
       }
 
       const commandMatch = info.message.match(MAPVOTE_EXTENDED_COMMANDS.common.mapvote.pattern);
+      const nominateMatch = info.message.match(MAPVOTE_EXTENDED_COMMANDS.common.nominate.pattern);
 
-      if (commandMatch) {
-        if (info.chat === CHATS_ADMINCHAT) {
-          if (
-            !engines.synchro.isPluginEnabled &&
-            (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.autoVoteInfo) ||
-              commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.nominateInfo) ||
-              commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.voteInfo) ||
-              commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.emergencyRestart) ||
-              commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.start))
-          ) {
-            await server.rcon.warn(info.steamID, `[MAPVOTE] Active: false`);
-            await server.rcon.warn(
-              info.steamID,
-              `Available commands:
+      if (nominateMatch) {
+        if (!engines.autoVote.isAutoVoteStarted()) {
+          await server.rcon.warn(info.steamID, 'Cannot nominate, no upcoming mapvote');
+        } else {
+          var layerName = nominateMatch[1];
+
+          var checkResult = engines.nomination.isNominationAvailable(info.steamID);
+
+          if (!checkResult.available) {
+            await server.rcon.warn(info.steamID, checkResult.message);
+          } else {
+            var nominationResult = await engines.nomination.addNewNomination(
+              layerName,
+              info.steamID
+            );
+
+            await server.rcon.warn(info.steamID, nominationResult.message);
+          }
+        }
+      } else {
+        if (commandMatch) {
+          if (info.chat === CHATS_ADMINCHAT) {
+            if (
+              !engines.synchro.isPluginEnabled &&
+              (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.autoVoteInfo) ||
+                commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.nominateInfo) ||
+                commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.voteInfo) ||
+                commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.emergencyRestart) ||
+                commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.start))
+            ) {
+              await server.rcon.warn(info.steamID, `[MAPVOTE] Active: false`);
+              await server.rcon.warn(
+                info.steamID,
+                `Available commands:
 !mapvote admin-help - commands
 !mapvote status - Plugin status
 !mapvote plugin-switch - On/Off plugin
 `
-            );
-          }
-
-          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.pluginStatus)) {
-            await server.rcon.warn(
-              info.steamID,
-              `Plugin active: ${engines.synchro.isPluginEnabled}`
-            );
-          }
-
-          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.switch)) {
-            engines.synchro.switchPlugin();
-
-            await server.rcon.warn(
-              info.steamID,
-              `Plugin switch state to: ${engines.synchro.isPluginEnabled}`
-            );
-          }
-
-          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.help)) {
-            await server.rcon.warn(
-              info.steamID,
-              '!mapvote start-manual-vote - Manually trigger vote process'
-            );
-            await server.rcon.warn(info.steamID, '!mapvote auto-vote-info - Auto vote info');
-            await server.rcon.warn(info.steamID, '!mapvote vote-info - Current vote details');
-            await server.rcon.warn(info.steamID, '!mapvote nominate-info - Current nominations');
-            await server.rcon.warn(
-              info.steamID,
-              '!mapvote emergency-restart - Restart vote process if something bad happened'
-            );
-            await server.rcon.warn(info.steamID, '!mapvote status - Plugin status');
-            await server.rcon.warn(info.steamID, '!mapvote plugin-switch - On/Off plugin');
-          }
-
-          if (engines.synchro.isPluginEnabled) {
-            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.autoVoteInfo)) {
-              console.log('autoVoteInfo');
-
-              const autoVoteInfo = engines.autoVote.getAutoVoteInfo();
-
-              for (let i = 0; i < autoVoteInfo.length; i++) {
-                await server.rcon.warn(info.steamID, autoVoteInfo[i]);
-              }
-            }
-
-            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.nominateInfo)) {
-              await server.rcon.warn(info.steamID, 'Nominated maps:');
-
-              var layers = await engines.nomination.getNominatedMapsInfo();
-
-              for (let i = 0; i < layers.length; i++) {
-                await server.rcon.warn(info.steamID, layers[i]);
-              }
-            }
-
-            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.voteInfo)) {
-              await server.rcon.warn(info.steamID, 'Vote info:');
-
-              var messages = await engines.voteEngine.getVotingInfo();
-
-              for (let i = 0; i < messages.length; i++) {
-                await server.rcon.warn(info.steamID, messages[i]);
-              }
-            }
-
-            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.emergencyRestart)) {
-              await server.rcon.warn(info.steamID, 'Plugin restarting...');
-
-              engines.autoVote.startNewMap();
-            }
-
-            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.start)) {
-              if (engines.autoVote.triggerManually()) {
-                await server.rcon.warn(info.steamID, 'VoteMap started manually!');
-              } else {
-                await server.rcon.warn(info.steamID, 'VoteMap map already happened!');
-              }
-            }
-          }
-        } else {
-          if (!engines.synchro.isPluginEnabled) {
-            await server.rcon.warn(info.steamID, '[MAPVOTE] System disabled');
-
-            return;
-          }
-
-          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.help)) {
-            await server.rcon.warn(
-              info.steamID,
-              '!mapvote results - Show the results of the current map vote'
-            );
-            await server.rcon.warn(
-              info.steamID,
-              '!mapvote nominate <layer-name> - Nominate the layer for the upcoming voting'
-            );
-            await server.rcon.warn(
-              info.steamID,
-              '<layer number> - After vote start, type selected map number'
-            );
-          }
-
-          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.results)) {
-            if (engines.voteEngine.voteInProgress) {
-              await server.rcon.warn(info.steamID, `Vote in progress`);
-            } else {
-              var layer = engines.voteEngine.getResult();
-
-              if (layer === null) {
-                await server.rcon.warn(
-                  info.steamID,
-                  `Vote will start in ${engines.autoVote.getEarliestTrigger()}`
-                );
-              } else {
-                await server.rcon.warn(info.steamID, `The next map: ${layer}`);
-              }
-            }
-          }
-
-          if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.nominate)) {
-            var layerName = commandMatch[1].substr(commandMatch[1].indexOf(' ') + 1);
-
-            var checkResult = engines.nomination.isNominationAvailable(info.steamID);
-
-            if (!checkResult.available) {
-              await server.rcon.warn(info.steamID, checkResult.message);
-            } else {
-              var nominationResult = await engines.nomination.addNewNomination(
-                layerName,
-                info.steamID
               );
+            }
 
-              await server.rcon.warn(info.steamID, nominationResult.message);
+            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.pluginStatus)) {
+              await server.rcon.warn(
+                info.steamID,
+                `Plugin active: ${engines.synchro.isPluginEnabled}`
+              );
+            }
+
+            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.switch)) {
+              engines.synchro.switchPlugin();
+
+              await server.rcon.warn(
+                info.steamID,
+                `Plugin switch state to: ${engines.synchro.isPluginEnabled}`
+              );
+            }
+
+            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.help)) {
+              await server.rcon.warn(
+                info.steamID,
+                '!mapvote start-manual-vote - Manually trigger vote process'
+              );
+              await server.rcon.warn(info.steamID, '!mapvote auto-vote-info - Auto vote info');
+              await server.rcon.warn(info.steamID, '!mapvote vote-info - Current vote details');
+              await server.rcon.warn(info.steamID, '!mapvote nominate-info - Current nominations');
+              await server.rcon.warn(
+                info.steamID,
+                '!mapvote emergency-restart - Restart vote process if something bad happened'
+              );
+              await server.rcon.warn(info.steamID, '!mapvote status - Plugin status');
+              await server.rcon.warn(info.steamID, '!mapvote plugin-switch - On/Off plugin');
+            }
+
+            if (engines.synchro.isPluginEnabled) {
+              if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.autoVoteInfo)) {
+                console.log('autoVoteInfo');
+
+                const autoVoteInfo = engines.autoVote.getAutoVoteInfo();
+
+                for (let i = 0; i < autoVoteInfo.length; i++) {
+                  await server.rcon.warn(info.steamID, autoVoteInfo[i]);
+                }
+              }
+
+              if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.nominateInfo)) {
+                await server.rcon.warn(info.steamID, 'Nominated maps:');
+
+                var layers = await engines.nomination.getNominatedMapsInfo();
+
+                for (let i = 0; i < layers.length; i++) {
+                  await server.rcon.warn(info.steamID, layers[i]);
+                }
+              }
+
+              if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.voteInfo)) {
+                await server.rcon.warn(info.steamID, 'Vote info:');
+
+                var messages = await engines.voteEngine.getVotingInfo();
+
+                for (let i = 0; i < messages.length; i++) {
+                  await server.rcon.warn(info.steamID, messages[i]);
+                }
+              }
+
+              if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.emergencyRestart)) {
+                await server.rcon.warn(info.steamID, 'Plugin restarting...');
+
+                engines.autoVote.startNewMap();
+              }
+
+              if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.start)) {
+                if (engines.autoVote.triggerManually()) {
+                  await server.rcon.warn(info.steamID, 'VoteMap started manually!');
+                } else {
+                  await server.rcon.warn(info.steamID, 'VoteMap map already happened!');
+                }
+              }
+            }
+          } else {
+            if (!engines.synchro.isPluginEnabled) {
+              await server.rcon.warn(info.steamID, '[MAPVOTE] System disabled');
+
+              return;
+            }
+
+            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.help)) {
+              await server.rcon.warn(
+                info.steamID,
+                '!mapvote results - Show the results of the current map vote'
+              );
+              await server.rcon.warn(
+                info.steamID,
+                '!nominate <layer-name> - Nominate the layer for the upcoming voting'
+              );
+              await server.rcon.warn(
+                info.steamID,
+                '<layer number> - After vote start, type selected map number'
+              );
+            }
+
+            if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.players.results)) {
+              if (engines.voteEngine.voteInProgress) {
+                await server.rcon.warn(info.steamID, `Vote in progress`);
+              } else {
+                var layer = engines.voteEngine.getResult();
+
+                if (layer === null) {
+                  if (!engines.autoVote.isAutoVoteStarted()) {
+                    await server.rcon.warn(info.steamID, `Vote map not ready yet!`);
+                  } else {
+                    await server.rcon.warn(
+                      info.steamID,
+                      `Vote will start in ${engines.autoVote.getEarliestTrigger()}`
+                    );
+                  }
+                } else {
+                  await server.rcon.warn(info.steamID, `The next map: ${layer}`);
+                }
+              }
             }
           }
         }

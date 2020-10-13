@@ -1,5 +1,5 @@
 import EventEmitter from 'events';
-import { FINAL_MAP_FETCH } from 'mapvote-extended/constants';
+import { FINAL_MAP_FETCH, START_NEW_MAP } from 'mapvote-extended/constants';
 import { GetTimeText } from 'mapvote-extended/helpers';
 
 export default class VoteEngine extends EventEmitter {
@@ -17,16 +17,27 @@ export default class VoteEngine extends EventEmitter {
     this.options = [];
     this.voters = [];
 
+    this.synchro.on(START_NEW_MAP, () => {
+      this.cleanupVotes();
+    });
+
     this.synchro.on(FINAL_MAP_FETCH, (maps) => {
       console.log('[VOTE ENGINE] START VOTE');
       this.startVote(maps);
     });
   }
 
+  cleanupVotes() {
+    this.voters = [];
+    this.winningMap = null;
+    this.options = [];
+    this.voteInProgress = false;
+  }
+
   startVote(maps) {
     this.options = maps;
     this.voteInProgress = true;
-    this.votes = [];
+    this.voters = [];
     this.voteEndTime = new Date(new Date().getTime() + this.voteTime * 60000);
     this.winningMap = null;
 
@@ -61,7 +72,7 @@ export default class VoteEngine extends EventEmitter {
     var message = 'Votemap started. Vote by type number in chat. \n';
 
     this.options.forEach((x) => {
-      message += ` ${x.id}. ${x.layer} \n`;
+      message += ` ${x.id}. ${x.layer} - [${x.votes}] votes \n`;
     });
 
     message += `Time left: ${GetTimeText(this.voteEndTime)}`;
