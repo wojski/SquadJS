@@ -69,7 +69,7 @@ You can find more information about votemap by use "!mapvote help".`
       return;
     }
 
-    this.server.rcon.execute(`AdminBroadcast [MAPVOTE] ${this.voteEngine.getVotingMessage()}`);
+    this.server.rcon.execute(`AdminBroadcast [MAPVOTE] ${this.voteEngine.getStartVotingMessage()}`);
 
     if (this.options.enableVoteStatusBroadcasting) {
       var interval = await setInterval(async () => {

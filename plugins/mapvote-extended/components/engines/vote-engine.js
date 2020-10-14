@@ -68,14 +68,26 @@ export default class VoteEngine extends EventEmitter {
     this.synchro.endVote(option.layer);
   }
 
-  getVotingMessage() {
+  getStartVotingMessage() {
     var message = 'Type number in chat. \n';
 
     this.options.forEach((x) => {
-      message += `${x.id}. ${x.layer} (${x.teamsInfo})\n`;
+      message += `${x.id}. ${x.layer} [${x.teamsInfo}]\n`;
     });
 
-    message += `Time left: ${GetTimeText(this.voteEndTime)}`;
+    message += `Time: ${GetTimeText(this.voteEndTime)}`;
+
+    return message;
+  }
+
+  getVotingMessage() {
+    var message = '\n';
+
+    this.options.forEach((x) => {
+      message += `${x.id}. ${x.layer} [${x.teamsInfo}][${x.votes}]\n`;
+    });
+
+    message += `${GetTimeText(this.voteEndTime)} left`;
 
     return message;
   }
