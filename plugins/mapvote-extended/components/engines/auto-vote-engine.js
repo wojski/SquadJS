@@ -169,7 +169,7 @@ export class AutoVoteTimeTrigger {
   constructor(template, trigger) {
     this.type = template.type;
     this.name = template.name;
-    this.triggerTime = new Date(new Date().getTime() + template.value * 60000);
+    this.triggerTime = new Date(new Date().getTime() + template.value * 1000);
     this.trigger = trigger;
     this.active = true;
   }
