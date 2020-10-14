@@ -52,9 +52,9 @@ export default {
   optionsSpec: {
     voteTime: {
       required: true,
-      description: 'Vote time (in minutes)',
-      default: 3,
-      example: 5
+      description: 'Vote time (in seconds)',
+      default: 180,
+      example: 300
     },
     layerFilter: {
       required: false,
@@ -87,12 +87,12 @@ export default {
             {
               name: 'timeTrigger',
               type: 2,
-              value: 15
+              value: 900 // seconds
             },
             {
               name: 'ticketTrigger', // [NOT IMPLEMENTED]
               type: 1,
-              value: 150
+              value: 1200 // seconds
             }
           ]
         }
@@ -124,9 +124,9 @@ export default {
         },
         nominationDelayTime: {
           required: false,
-          description: 'How much time delay nomination after map start (minutes)',
-          default: 5,
-          example: 10
+          description: 'How much time delay nomination after map start (seconds)',
+          default: 300,
+          example: 600
         },
         isNominationTriggerVote: {
           required: false,
@@ -136,9 +136,9 @@ export default {
         },
         voteDelayAfterFirstNominate: {
           required: false,
-          description: 'After how many minutes start vote after first nomination',
-          default: 5,
-          example: 10
+          description: 'After how many seconds start vote after first nomination',
+          default: 300,
+          example: 600
         }
       }
     },
@@ -156,9 +156,9 @@ export default {
         },
         firstInformationBroadcastingDelay: {
           required: false,
-          description: 'First info delay (minutes)',
-          default: 3,
-          example: 3
+          description: 'First info delay (seconds)',
+          default: 60,
+          example: 180
         },
         enableNominationBroadcasting: {
           required: false,

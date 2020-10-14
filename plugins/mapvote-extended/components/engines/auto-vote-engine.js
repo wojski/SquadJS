@@ -85,7 +85,7 @@ export default class AutoVoteEngine extends EventEmitter {
 
     var trigger = setTimeout(() => {
       this.triggerStartVote();
-    }, voteTimeDelay * 60 * 1000);
+    }, voteTimeDelay * 1000);
 
     this.triggers.push(
       new AutoVoteTimeTrigger(

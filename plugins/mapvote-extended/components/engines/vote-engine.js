@@ -38,12 +38,12 @@ export default class VoteEngine extends EventEmitter {
     this.options = maps;
     this.voteInProgress = true;
     this.voters = [];
-    this.voteEndTime = new Date(new Date().getTime() + this.voteTime * 60000);
+    this.voteEndTime = new Date(new Date().getTime() + this.voteTime * 1000);
     this.winningMap = null;
 
     setTimeout(() => {
       this.endVote();
-    }, this.voteTime * 60 * 1000);
+    }, this.voteTime * 1000);
 
     this.synchro.startVote();
   }

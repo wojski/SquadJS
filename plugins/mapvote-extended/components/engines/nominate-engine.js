@@ -37,7 +37,7 @@ export default class NominateEngine extends EventEmitter {
   newMap() {
     this.nominations = [];
 
-    this.nominationTime = new Date(new Date().getTime() + this.options.nominationDelayTime * 60000);
+    this.nominationTime = new Date(new Date().getTime() + this.options.nominationDelayTime * 1000);
     this.isVoteStarted = false;
     this.nominationTriggerEmitted = false;
   }
