@@ -41,7 +41,7 @@ export default class BroadcastEngine extends EventEmitter {
       }
       this.startMessage = setTimeout(() => {
         this.votemapInfo();
-      }, this.options.firstInformationBroadcastingDelay * 60 * 1000);
+      }, this.options.firstInformationBroadcastingDelay * 1000);
     }
   }
 
