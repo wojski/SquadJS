@@ -17,6 +17,7 @@ export default class DiscordBasePlugin extends BasePlugin {
   constructor(server, options, optionsRaw) {
     super(server, options, optionsRaw);
 
+    this.discordClient = options.discordClient;
     this.channel = null;
   }
 

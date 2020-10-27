@@ -20,7 +20,6 @@ import { SquadLayers } from './utils/squad-layers.js';
 import plugins from './plugins/index.js';
 import { ServerConfig } from '../serverconfig.js';
 import glob from 'glob';
-import BasePlugin from './plugins/base-plugin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -55,6 +54,7 @@ export default class SquadServer extends EventEmitter {
     glob.sync('./plugins/*.js', { cwd: './squad-server/'}).reduce(async (plugins, file) => {
       // import potential plugin class from file name
       const { default: plugin } = await import(file);
+      plugins = await plugins;
 
       try {
         // check if BasePlugin is implemented to make shore its a plugin
@@ -64,14 +64,9 @@ export default class SquadServer extends EventEmitter {
 
           // if config is absent plugin is disabled or unconfigured
           if (currentConf) {
-            const [ optionName, option ]  = Object.entries(plugin.optionsSpecification)
-            .find(([optionName, option], index, object) => option && option.connector);
+            const pluginOptions = await this.buildPluginOptions(plugin.optionsSpecification, currentConf);
 
-            if (optionName && !this.connectors[currentConf[optionName]]) {
-              this.setupConnector(currentConf[optionName], option);
-            }
-
-            return [...(await plugins), new plugin(this, option, currentConf)];
+            return [...(await plugins), new plugin(this, pluginOptions, currentConf)];
           } else {
             console.log(plugin.name, " is disabled or have no config");
           }
@@ -81,27 +76,44 @@ export default class SquadServer extends EventEmitter {
       } catch (e) {
         // plugin not implemented
       }
-      return await plugins;
+      return plugins;
     }, []).then(result => this.plugins = result);
   }
 
+  async buildPluginOptions(optionsSpecification, pluginConfig) {
+    return await Object.entries(optionsSpecification).reduce(async (outputOptions, [optionName, option]) => {
+      outputOptions = await outputOptions;
+
+      if (option && option.connector) {
+        if (optionName && this.connectors[pluginConfig[optionName]])
+          outputOptions[optionName] = this.connectors[pluginConfig[optionName]];
+        else
+          outputOptions[optionName] = await this.setupConnector(pluginConfig[optionName], option);
+      } else if (!outputOptions[optionName]) {
+        outputOptions[optionName] = pluginConfig[optionName] || option.default;
+      }
+      return outputOptions;
+    }, {});
+  }
+
   async setupConnector(connectorName, option) {
+    const connectorConfig = ServerConfig.getInstance().config.connectors[connectorName];
+    var connector;
     if (option.connector === 'discord') {
       Logger.verbose('SquadServer', 1, `Starting discord connector ${connectorName}...`);
-      this.connectors[connectorName] = new Discord.Client();
-      await this.connectors[connectorName].login(connectorConfig);
+      connector = new Discord.Client();
+      await connector.login(connectorConfig);
+      this.connectors[connectorName] = connector;
+      return this.connectors[connectorName];
     } else if (option.connector === 'mysql') {
       Logger.verbose('SquadServer', 1, `Starting mysqlPool connector ${connectorName}...`);
       this.connectors[connectorName] = mysql.createPool(connectorConfig);
     } else if (option.connector === 'squadlayerpool') {
-      Logger.verbose(
-        'SquadServer',
-        1,
-        `Starting squadlayerfilter connector ${connectorName}...`
+      Logger.verbose('SquadServer', 1, `Starting squadlayerfilter connector ${connectorName}...`
       );
       this.connectors[connectorName] = server.squadLayers[connectorConfig.type](
-        connectorConfig.filter,
-        connectorConfig.activeLayerFilter
+        ServerConfig.getInstance().config.connectors[connectorName].filter,
+        ServerConfig.getInstance().config.connectors[connectorName].activeLayerFilter
       );
     } else if (option.connector === 'databaseClient') {
       this.connectors[connectorName] = new Seqelize(connectorConfig.database, connectorConfig.user, connectorConfig.password, connectorConfig.server);
@@ -109,53 +121,8 @@ export default class SquadServer extends EventEmitter {
     } else {
       throw new Error(`${option.connector} is an unsupported connector type.`);
     }
+    return this.connectors[connectorName];
   }
-
-  // setupConnectors() {
-  //   for (const pluginConfig of config.plugins) {
-  //     if (!pluginConfig.enabled) continue;
-
-  //     const Plugin = plugins[pluginConfig.plugin];
-
-  //     for (const [optionName, option] of Object.entries(Plugin.optionsSpecification)) {
-  //       // ignore non connectors
-  //       if (!option.connector) continue;
-
-  //       if (!(optionName in pluginConfig))
-  //         throw new Error(
-  //           `${Plugin.name}: ${optionName} (${option.connector} connector) is missing.`
-  //         );
-
-  //       const connectorName = pluginConfig[optionName];
-
-  //       // skip already created connectors
-  //       if (connectors[connectorName]) continue;
-
-  //       const connectorConfig = config.connectors[connectorName];
-
-  //       if (option.connector === 'discord') {
-  //         Logger.verbose('SquadServer', 1, `Starting discord connector ${connectorName}...`);
-  //         connectors[connectorName] = new Discord.Client();
-  //         await connectors[connectorName].login(connectorConfig);
-  //       } else if (option.connector === 'mysql') {
-  //         Logger.verbose('SquadServer', 1, `Starting mysqlPool connector ${connectorName}...`);
-  //         connectors[connectorName] = mysql.createPool(connectorConfig);
-  //       } else if (option.connector === 'squadlayerpool') {
-  //         Logger.verbose(
-  //           'SquadServer',
-  //           1,
-  //           `Starting squadlayerfilter connector ${connectorName}...`
-  //         );
-  //         connectors[connectorName] = server.squadLayers[connectorConfig.type](
-  //           connectorConfig.filter,
-  //           connectorConfig.activeLayerFilter
-  //         );
-  //       } else {
-  //         throw new Error(`${option.connector} is an unsupported connector type.`);
-  //       }
-  //     }
-  //   }
-  // }
 
   setupUpdateIntervals() {
     this.updatePlayerList = this.updatePlayerList.bind(this);
@@ -402,8 +369,8 @@ export default class SquadServer extends EventEmitter {
     try {
       const data = await Gamedig.query({
         type: 'squad',
-        host: ServerConfig.getInstance().config.host,
-        port: ServerConfig.getInstance().config.queryPort
+        host: ServerConfig.getInstance().config.server.host,
+        port: ServerConfig.getInstance().config.server.queryPort
       });
 
       this.serverName = data.name;
