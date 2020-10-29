@@ -1,3 +1,4 @@
+import Logger from 'core/logger';
 import SquadServer from 'squad-server';
 import printLogo from 'squad-server/logo';
 import { ServerConfig } from './serverconfig.js';
@@ -14,9 +15,14 @@ async function main() {
   else
     ServerConfig.buildFromConfigFile(configPath || './config.json');
 
-  const server = new SquadServer();
+  try {
+    const server = new SquadServer();
 
-  await server.watch();
+    await server.watch();
+  } catch (e) {
+    // Catch all uncatch errors, try not to rely on this.
+    Logger.error('Main', e, e.stack);
+  }
 }
 
-main ();
+main();
