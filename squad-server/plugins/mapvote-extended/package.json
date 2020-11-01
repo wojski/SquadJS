@@ -1,0 +1,10 @@
+{
+    "name": "mapvote-extended",
+    "version": "1.0.0",
+    "type": "module",
+    "exports": {
+      "./constants": "./core/constants.js",
+      "./mapvote-extended-commands": "./core/plugin-commands.js",
+      "./helpers": "./core/helpers.js"
+    }
+  }

@@ -16,6 +16,7 @@ import MapVoteAutoComplete from './mapvote/mapvote-auto-complete.js';
 import SeedingMode from './seeding-mode.js';
 import TeamRandomizer from './team-randomizer.js';
 import DiscordPlayersList from './discord-players-list.js';
+import MapVoteExtended from './mapvote-extended/mapvote-extended.js';
 
 const plugins = [
   AutoTKWarn,
@@ -36,7 +37,8 @@ const plugins = [
   DiscordServerStatus,
   DiscordPlayersList,
   MapVoteAutoComplete,
-  MapVote123
+  MapVote123,
+  MapVoteExtended
 ];
 
 const pluginsByName = {};
