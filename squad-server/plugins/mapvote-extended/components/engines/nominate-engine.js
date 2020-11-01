@@ -71,17 +71,17 @@ export default class NominateEngine extends EventEmitter {
 
       var layer = layerResult.layer;
 
-      if (this.options.canReNominate) {
-        var nominated = this.nominations.filter((x) => x.identifier === identifier);
+      // if (this.options.canReNominate) {
+      //   var nominated = this.nominations.filter((x) => x.identifier === identifier);
 
-        if (nominated.length > 0) {
-          nominated[0].layer = layer;
-        } else {
-          this.nominations.push(new Nomination(layer, identifier));
-        }
-      } else {
-        this.nominations.push(new Nomination(layer, identifier));
-      }
+      //   if (nominated.length > 0) {
+      //     nominated[0].layer = layer;
+      //   } else {
+      //     this.nominations.push(new Nomination(layer, identifier));
+      //   }
+      // } else {
+      this.nominations.push(new Nomination(layer, identifier));
+      // }
 
       console.log(this.options.isNominationTriggerVote);
       console.log(this.nominationTriggerEmitted);
@@ -107,11 +107,11 @@ export default class NominateEngine extends EventEmitter {
   async getNominatedMapsInfo() {
     var list = [];
 
-    this.nominations.forEach((element) => {
-      if (!list.some((x) => x === element.layer)) {
-        list.push(element.layer);
+    for (const nom of this.nominations) {
+      if (!list.some((x) => x === nom.layer.layer)) {
+        list.push(nom.layer.layer);
       }
-    });
+    }
 
     return list;
   }
@@ -119,16 +119,18 @@ export default class NominateEngine extends EventEmitter {
   async getNominationsForVote() {
     var nominations = [];
 
-    this.nominations.forEach((x) => {
-      var item = nominations.filter((itm) => itm.layer === x.layer);
+    for (const nom of this.nominations) {
+      var item = nominations.filter((itm) => itm.layer.layer === nom.layer.layer);
 
       if (item != null && item.length > 0) {
         item.count += 1;
-        item.players.push(x.identifier);
+        if (item.players && item.players.length > 0) {
+          item.players.push(nom.identifier);
+        }
       } else {
-        nominations.push({ layer: x.layer, count: 1, players: [x.identifier] });
+        nominations.push({ layer: nom.layer, count: 1, players: [nom.identifier] });
       }
-    });
+    }
 
     this.isVoteStarted = true;
 
