@@ -1,67 +1,74 @@
-import DiscordIntervalUpdatedMessage from "./discord-interval-updated-message.js";
+import DiscordIntervalUpdatedMessage from './discord-interval-updated-message.js';
 import { COPYRIGHT_MESSAGE } from '../utils/constants.js';
 
 export default class DiscordPlayersList extends DiscordIntervalUpdatedMessage {
+  static get description() {
+    return `<code>DiscordPlayerList</code> is a discord plugin displaying players currentley in each team. 
+        Two columns, each named by theyr fraction shorctcut.
+        Side accent color can be modified.`;
+  }
 
-    TEAM_ONE_ID = '1';
+  static get defaultEnabled() {
+    return false;
+  }
 
-    static get description() {
-        return '<code>DiscordPlayerList</code> is a discord plugin displaying players currentley in each team. Two columns, each named by theyr fraction shorctcut.\
-        Side accent color can be modified.'
-    }
-
-    static get defaultEnabled() {
-        return false;
-    }
-    
-    static get optionsSpecification() {
-        return {
-          ...super.optionsSpecification,
-          embedColor: {
-            description: "Color to use on small stuff to make things look cool",
-            default: '#FFFFFF'
-          }
-        }
+  static get optionsSpecification() {
+    return {
+      ...super.optionsSpecification,
+      embedColor: {
+        description: 'Color to use on small stuff to make things look cool',
+        default: '#FFFFFF'
       }
-  
-    constructor(server, options) {
-        super(server, options)
+    };
+  }
 
-        this.embedColor = options.embedColor;
-    }
+  constructor(server, options) {
+    super(server, options);
 
-    buildPlayerListByTeam(playerArrayMixed) {
-        let playerByTeam = { teamOne: '', teamTwo: '', teamOneCount: 0, teamTwoCount: 0 };
+    this.embedColor = options.embedColor;
+    this.TEAM_ONE_ID = '1';
+  }
 
-        playerArrayMixed.forEach(player => {
-            if (player.teamID === this.TEAM_ONE_ID) {
-                playerByTeam.teamOne += player.name + '\n';
-                playerByTeam.teamOneCount++;
-            } else {
-                playerByTeam.teamTwo += player.name + '\n';
-                playerByTeam.teamTwoCount++;
-            }
-        });
+  buildPlayerListByTeam(playerArrayMixed) {
+    const playerByTeam = { teamOne: '', teamTwo: '', teamOneCount: 0, teamTwoCount: 0 };
 
-        if (playerByTeam.teamOneCount === 0) playerByTeam.teamOne = 'Empty';
-        if (playerByTeam.teamTwoCount === 0) playerByTeam.teamTwo = 'Empty';
+    playerArrayMixed.forEach((player) => {
+      if (player.teamID === this.TEAM_ONE_ID) {
+        playerByTeam.teamOne += player.name + '\n';
+        playerByTeam.teamOneCount++;
+      } else {
+        playerByTeam.teamTwo += player.name + '\n';
+        playerByTeam.teamTwoCount++;
+      }
+    });
 
-        return playerByTeam;
-    }
+    if (playerByTeam.teamOneCount === 0) playerByTeam.teamOne = 'Empty';
+    if (playerByTeam.teamTwoCount === 0) playerByTeam.teamTwo = 'Empty';
 
-    buildMessage(server) {
-        const playerListByTeam = this.buildPlayerListByTeam(server.players);
+    return playerByTeam;
+  }
 
-        return {
-            embed: {
-                color: this.embedColor,
-                timestamp: new Date().toISOString(),
-                fields: [
-                    { name: `${server.layerHistory[0].teamOne.faction}  (${playerListByTeam.teamOneCount} players)`, value: `\`\`\`${playerListByTeam.teamOne}\`\`\``, inline: true },
-                    { name: `${server.layerHistory[0].teamTwo.faction}  (${playerListByTeam.teamTwoCount} players)`, value: `\`\`\`${playerListByTeam.teamTwo}\`\`\``, inline: true }
-                ],
-                footer: { text: COPYRIGHT_MESSAGE }
-            }
-        };
-    }
+  buildMessage(server) {
+    const playerListByTeam = this.buildPlayerListByTeam(server.players);
+
+    return {
+      embed: {
+        color: this.embedColor,
+        timestamp: new Date().toISOString(),
+        fields: [
+          {
+            name: `${server.layerHistory[0].teamOne.faction}  (${playerListByTeam.teamOneCount} players)`,
+            value: `\`\`\`${playerListByTeam.teamOne}\`\`\``,
+            inline: true
+          },
+          {
+            name: `${server.layerHistory[0].teamTwo.faction}  (${playerListByTeam.teamTwoCount} players)`,
+            value: `\`\`\`${playerListByTeam.teamTwo}\`\`\``,
+            inline: true
+          }
+        ],
+        footer: { text: COPYRIGHT_MESSAGE }
+      }
+    };
+  }
 }

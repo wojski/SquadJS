@@ -204,6 +204,19 @@
       "interval": 300,
       "storage": "sqlite",
       "embedColor": "#FFFFFF"
+    },
+    {
+      "plugin": "MapVote123",
+      "enabled": false,
+      "minVoteCount": null
+    },
+    {
+      "plugin": "MapVoteAutoComplete",
+      "enabled": false,
+      "layerFilter": "squadlayerpool",
+      "alwaysOn": true,
+      "minPlayerCount": null,
+      "minVoteCount": null
     }
   ],
   "verboseness": {
