@@ -71,17 +71,17 @@ export default class NominateEngine extends EventEmitter {
 
       var layer = layerResult.layer;
 
-      // if (this.options.canReNominate) {
-      //   var nominated = this.nominations.filter((x) => x.identifier === identifier);
+      if (this.options.canReNominate) {
+        var nominated = this.nominations.filter((x) => x.identifier === identifier);
 
-      //   if (nominated.length > 0) {
-      //     nominated[0].layer = layer;
-      //   } else {
-      //     this.nominations.push(new Nomination(layer, identifier));
-      //   }
-      // } else {
-      this.nominations.push(new Nomination(layer, identifier));
-      // }
+        if (nominated.length > 0) {
+          nominated[0].layer = layer;
+        } else {
+          this.nominations.push(new Nomination(layer, identifier));
+        }
+      } else {
+        this.nominations.push(new Nomination(layer, identifier));
+      }
 
       console.log(this.options.isNominationTriggerVote);
       console.log(this.nominationTriggerEmitted);
