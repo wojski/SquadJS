@@ -1,7 +1,7 @@
 import Logger from 'core/logger';
 import SquadServer from 'squad-server';
 import printLogo from 'squad-server/logo';
-import { ServerConfig } from './serverconfig.js';
+import { ServerConfigBuilder } from './serverconfig.js';
 
 async function main() {
   await printLogo();
@@ -10,13 +10,10 @@ async function main() {
   const configPath = process.argv[2];
   if (envConfig && configPath) throw new Error('Cannot accept both a config and config path.');
 
-  if (envConfig)
-    ServerConfig.buildFromPlainString(envConfig);
-  else
-    ServerConfig.buildFromConfigFile(configPath || './config.json');
+  const configProvider = new ServerConfigBuilder().build(envConfig, configPath);
 
   try {
-    const server = new SquadServer();
+    const server = new SquadServer(configProvider);
 
     await server.watch();
   } catch (e) {

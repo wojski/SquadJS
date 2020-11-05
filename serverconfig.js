@@ -1,9 +1,31 @@
 import fs from 'fs';
 
-export class ServerConfig {
-  instance;
-  config;
+export class ServerConfigBuilder {
+  build(envConfig, configPath) {
+    return envConfig
+      ? this.buildFromPlainString(envConfig)
+      : this.buildFromConfigFile(configPath || './config.json');
+  }
 
+  buildFromConfigFile(file) {
+    if (!fs.existsSync(file)) throw new Error(`Config file not found: "${file}"`);
+    const configString = fs.readFileSync(file, 'utf8');
+    return this.buildFromPlainString(configString);
+  }
+
+  buildFromPlainString(configString) {
+    // eslint-disable-next-line no-useless-catch
+    try {
+      const configObject = JSON.parse(configString);
+      return new ServerConfig(configObject);
+    } catch (e) {
+      // TODO: Log Stuff and help with parse errors related to JSON format
+      throw e;
+    }
+  }
+}
+
+export class ServerConfig {
   constructor(configObject) {
     for (const option of ['host', 'queryPort'])
       if (!(option in configObject.server)) throw new Error(`${option} must be specified.`);
@@ -16,33 +38,10 @@ export class ServerConfig {
   }
 
   checkPluginsConfig(plugins) {
-    if (!plugins || plugins.length <= 0) throw Error("No plugins specified in config file.")
+    if (!plugins || plugins.length <= 0) throw Error('No plugins specified in config file.');
 
-    plugins = plugins.filter(plugin => plugin.enabled);
+    plugins = plugins.filter((plugin) => plugin.enabled);
 
     return plugins;
-  }
-
-  static buildFromConfigFile(file) {
-    if (!fs.existsSync(file)) throw new Error(`Config file not found: "${file}"`);
-    const configString = fs.readFileSync(file, 'utf8');
-    return ServerConfig.buildFromPlainString(configString);
-  };
-
-  static buildFromPlainString(configString) {
-    try {
-      const configObject = JSON.parse(configString);
-      this.instance = new ServerConfig(configObject);
-      Object.freeze(this.instance);
-    } catch (e) {
-      // TODO: Log Stuff and help with parse errors related to JSON format
-      throw e;
-    }
-    return this.instance;
-  };
-
-  static getInstance() {
-    if (!this.instance) throw new Error('Config instance not initialised, call buildFromConfigFile or buildFromPlainString first');
-    return this.instance;
   }
 }

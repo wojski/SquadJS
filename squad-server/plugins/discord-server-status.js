@@ -1,7 +1,6 @@
 import tinygradient from 'tinygradient';
 import BasePlugin from './base-plugin.js';
 import { COPYRIGHT_MESSAGE } from '../utils/constants.js';
-import { ServerConfig } from "../../serverconfig.js";
 
 export default class DiscordServerStatus extends BasePlugin {
   static get description() {

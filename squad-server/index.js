@@ -1,12 +1,10 @@
 import EventEmitter from 'events';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import path from 'path';
 
 import axios from 'axios';
 import Discord from 'discord.js';
 import Gamedig from 'gamedig';
 import mysql from 'mysql';
+import Sequelize from 'Sequelize';
 
 import Logger from 'core/logger';
 import { SQUADJS_API_DOMAIN } from 'core/constants';
@@ -17,86 +15,99 @@ import Rcon from 'rcon/squad';
 import { SQUADJS_VERSION } from './utils/constants.js';
 import { SquadLayers } from './utils/squad-layers.js';
 
-import { ServerConfig } from '../serverconfig.js';
 import glob from 'glob';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 export default class SquadServer extends EventEmitter {
-  constructor() {
+  constructor(configProvider) {
     super();
     Logger.verbose('SquadServer', 1, 'Creating SquadServer...');
+
+    this.configProvider = configProvider;
 
     this.layerHistory = [];
     this.players = [];
     this.plugins = [];
     this.connectors = {};
-    const config = ServerConfig.getInstance().config;
 
-    Object.entries(config.verboseness).forEach(([module, verboseness]) => Logger.setVerboseness(module, verboseness));
+    Object.entries(this.configProvider.config.verboseness).forEach(([module, verboseness]) =>
+      Logger.setVerboseness(module, verboseness)
+    );
 
     // ?? SquadLayers is present both in SquadServer and connectors array
-    this.squadLayers = new SquadLayers(config.server.squadLayersSource);
-    this.rcon = this.setupRCON(config.server);
-    this.logParser = this.setupLogParser(config.server);
+    this.squadLayers = new SquadLayers(this.configProvider.config.server.squadLayersSource);
+    this.rcon = this.setupRCON(this.configProvider.config.server);
+    this.logParser = this.setupLogParser(this.configProvider.config.server);
     this.setupUpdateIntervals();
 
     // move squadLayers pull to the SquadLayers constructor ?
     this.squadLayers.pull();
-    this.setupPlugins(config.plugins);
+    this.setupPlugins(this.configProvider.config.plugins);
   }
 
   async setupPlugins(pluginsConfig) {
     Logger.verbose('SquadServer', 1, 'Seting up plugins...');
     // Get all potential plugin files from plugin directory
-    glob.sync('./plugins/*.js', { cwd: './squad-server/'}).reduce(async (plugins, file) => {
-      // import potential plugin class from file name
-      const { default: plugin } = await import(file);
-      plugins = await plugins;
+    glob
+      .sync('./plugins/*.js', { cwd: './squad-server/' })
+      .reduce(async (plugins, file) => {
+        // import potential plugin class from file name
+        const { default: plugin } = await import(file);
+        plugins = await plugins;
 
-      try {
-        // check if BasePlugin is implemented to make shore its a plugin
-        if (plugin.optionsSpecification) {
-          // recover plugins configuration
-          const currentConf = pluginsConfig.find(singleConfig => singleConfig.plugin === plugin.name);
+        try {
+          // check if BasePlugin is implemented to make shore its a plugin
+          if (plugin.optionsSpecification) {
+            // recover plugins configuration
+            const currentConf = pluginsConfig.find(
+              (singleConfig) => singleConfig.plugin === plugin.name
+            );
 
-          // if config is absent plugin is disabled or unconfigured
-          if (currentConf) {
-            const pluginOptions = await this.buildPluginOptions(plugin.optionsSpecification, currentConf);
+            // if config is absent plugin is disabled or unconfigured
+            if (currentConf) {
+              const pluginOptions = await this.buildPluginOptions(
+                plugin.optionsSpecification,
+                currentConf
+              );
 
-            Logger.verbose('SquadServer', 1, `Creating ${plugin.name}...`);
-            return [...(await plugins), new plugin(this, pluginOptions, currentConf)];
+              Logger.verbose('SquadServer', 1, `Creating ${plugin.name}...`);
+              // eslint-disable-next-line new-cap
+              return [...(await plugins), new plugin(this, pluginOptions, currentConf)];
+            } else {
+              Logger.verbose('SquadServer', 2, `Plugin ${plugin.name} disabled or unconfigured.`);
+            }
           } else {
-            Logger.verbose('SquadServer', 2, `Plugin ${plugin.name} disabled or unconfigured.`);
+            Logger.error('SquadServer', 2, `Plugin ${plugin.name} unimplemented.`);
           }
-        } else {
-          Logger.error('SquadServer', 2, `Plugin ${plugin.name} unimplemented.`);
+        } catch (e) {
+          Logger.error('SquadServer', 2, `Plugin ${plugin.name} unimplemented.`, e);
         }
-      } catch (e) {
-        Logger.error('SquadServer', 2, `Plugin ${plugin.name} unimplemented.`, e);
-      }
-      return plugins;
-    }, []).then(result => this.plugins = result);
+        return plugins;
+        // eslint-disable-next-line no-return-assign
+      }, [])
+      .then((result) => (this.plugins = result));
   }
 
   async buildPluginOptions(optionsSpecification, pluginConfig) {
-    return await Object.entries(optionsSpecification).reduce(async (outputOptions, [optionName, option]) => {
-      outputOptions = await outputOptions;
+    return await Object.entries(optionsSpecification).reduce(
+      async (outputOptions, [optionName, option]) => {
+        outputOptions = await outputOptions;
 
-      if (option && option.connector) {
-        if (optionName && this.connectors[pluginConfig[optionName]])
-          outputOptions[optionName] = this.connectors[pluginConfig[optionName]];
-        else
-          outputOptions[optionName] = await this.setupConnector(pluginConfig[optionName], option);
-      } else if (!outputOptions[optionName]) {
-        outputOptions[optionName] = pluginConfig[optionName] || option.default;
-      }
-      return outputOptions;
-    }, {});
+        if (option && option.connector) {
+          if (optionName && this.connectors[pluginConfig[optionName]])
+            outputOptions[optionName] = this.connectors[pluginConfig[optionName]];
+          else
+            outputOptions[optionName] = await this.setupConnector(pluginConfig[optionName], option);
+        } else if (!outputOptions[optionName]) {
+          outputOptions[optionName] = pluginConfig[optionName] || option.default;
+        }
+        return outputOptions;
+      },
+      {}
+    );
   }
 
   async setupConnector(connectorName, option) {
-    const connectorConfig = ServerConfig.getInstance().config.connectors[connectorName];
+    const connectorConfig = this.configProvider.config.connectors[connectorName];
     var connector;
 
     switch (option.connector) {
@@ -112,10 +123,18 @@ export default class SquadServer extends EventEmitter {
       case 'squadlayerpool':
         Logger.verbose('SquadServer', 1, `Starting squadlayerfilter connector ${connectorName}...`);
         // ?? SquadLayers is present both in SquadServer and connectors array
-        connector = this.squadLayers[connectorConfig.type](connectorName.filter, connectorName.activeLayerFilter);
+        connector = this.squadLayers[connectorConfig.type](
+          connectorName.filter,
+          connectorName.activeLayerFilter
+        );
         break;
       case 'databaseClient':
-        connector = new Seqelize(connectorConfig.database, connectorConfig.user, connectorConfig.password, connectorConfig.server);
+        connector = new Sequelize(
+          connectorConfig.database,
+          connectorConfig.user,
+          connectorConfig.password,
+          connectorConfig.server
+        );
         connector.authenticate();
         break;
       default:
@@ -374,8 +393,8 @@ export default class SquadServer extends EventEmitter {
     try {
       const data = await Gamedig.query({
         type: 'squad',
-        host: ServerConfig.getInstance().config.server.host,
-        port: ServerConfig.getInstance().config.server.queryPort
+        host: this.configProvider.config.server.host,
+        port: this.configProvider.config.server.queryPort
       });
 
       this.serverName = data.name;
@@ -448,70 +467,6 @@ export default class SquadServer extends EventEmitter {
     await this.logParser.unwatch();
   }
 
-  static async buildFromConfig(config) {
-
-    // const server = new SquadServer(config.server);
-
-    // pull layers read to use to create layer filter connectors
-
-    
-
-
-    Logger.verbose('SquadServer', 1, 'Applying plugins to SquadServer...');
-    for (const pluginConfig of config.plugins) {
-      if (!pluginConfig.enabled) continue;
-
-      if (!plugins[pluginConfig.plugin])
-        throw new Error(`Plugin ${pluginConfig.plugin} does not exist.`);
-
-      const Plugin = plugins[pluginConfig.plugin];
-
-      Logger.verbose('SquadServer', 1, `Initialising ${Plugin.name}...`);
-
-      const options = {};
-      for (const [optionName, option] of Object.entries(Plugin.optionsSpecification)) {
-        if (option.connector) {
-          options[optionName] = connectors[pluginConfig[optionName]];
-        } else {
-          if (option.required) {
-            if (!(optionName in pluginConfig))
-              throw new Error(`${Plugin.name}: ${optionName} is required but missing.`);
-            if (option.default === pluginConfig[optionName])
-              throw new Error(
-                `${Plugin.name}: ${optionName} is required but is the default value.`
-              );
-          }
-
-          options[optionName] = pluginConfig[optionName] || option.default;
-        }
-      }
-
-      server.plugins.push(new Plugin(server, options, pluginConfig));
-    }
-
-    return server;
-  }
-
-  static buildFromConfigString(configString) {
-    let config;
-    try {
-      config = JSON.parse(configString);
-    } catch (err) {
-      throw new Error('Unable to parse config file.');
-    }
-
-    return SquadServer.buildFromConfig(config);
-  }
-
-  static buildFromConfigFile(configPath = './config.json') {
-    Logger.verbose('SquadServer', 1, 'Reading config file...');
-    configPath = path.resolve(__dirname, '../', configPath);
-    if (!fs.existsSync(configPath)) throw new Error('Config file does not exist.');
-    const configString = fs.readFileSync(configPath, 'utf8');
-
-    return SquadServer.buildFromConfigString(configString);
-  }
-
   async pingSquadJSAPI() {
     if (this.pingSquadJSAPITimeout) clearTimeout(this.pingSquadJSAPITimeout);
 
@@ -520,9 +475,9 @@ export default class SquadServer extends EventEmitter {
     const config = {
       // send minimal information on server
       server: {
-        host: ServerConfig.getInstance().config.host,
-        queryPort: ServerConfig.getInstance().config.queryPort,
-        logReaderMode: ServerConfig.getInstance().config.logReaderMode
+        host: this.configProvider.config.host,
+        queryPort: this.configProvider.config.queryPort,
+        logReaderMode: this.configProvider.config.logReaderMode
       },
 
       // we send all plugin information as none of that is sensitive.
