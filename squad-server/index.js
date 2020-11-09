@@ -55,6 +55,9 @@ export default class SquadServer extends EventEmitter {
         plugins = await plugins;
 
         try {
+          if (plugin.name === 'BasePlugin') {
+            return plugins;
+          }
           // check if BasePlugin is implemented to make shore its a plugin
           if (plugin.optionsSpecification) {
             // recover plugins configuration
@@ -164,13 +167,32 @@ export default class SquadServer extends EventEmitter {
     this.pingSquadJSAPITimeout = null;
   }
 
-  setupRCON(serverSettings) {
-    Logger.verbose('SquadServer', 1, 'Creating Rcon...');
+  async watch() {
+    await this.squadLayers.pull();
+
+    await this.rcon.connect();
+    await this.logParser.watch();
+
+    await this.updatePlayerList();
+    await this.updateLayerInformation();
+    await this.updateA2SInformation();
+
+    Logger.verbose('SquadServer', 1, `Watching ${this.serverName}...`);
+
+    await this.pingSquadJSAPI();
+  }
+
+  async unwatch() {
+    await this.rcon.disconnect();
+    await this.logParser.unwatch();
+  }
+
+  setupRCON(config) {
     const rcon = new Rcon({
-      host: serverSettings.host,
-      port: serverSettings.rconPort,
-      password: serverSettings.rconPassword,
-      autoReconnectInterval: serverSettings.rconAutoReconnectInterval
+      host: config.host,
+      port: config.rconPort,
+      password: config.rconPassword,
+      autoReconnectInterval: config.rconAutoReconnectInterval
     });
 
     rcon.on('CHAT_MESSAGE', async (data) => {
@@ -200,7 +222,7 @@ export default class SquadServer extends EventEmitter {
     }
 
     Logger.verbose('SquadServer', 1, 'Setting up new RCON instance...');
-    this.setupRCON();
+    this.rcon = this.setupRCON();
     await this.rcon.connect();
   }
 
@@ -447,26 +469,6 @@ export default class SquadServer extends EventEmitter {
     return this.getPlayerByCondition((player) => player.suffix === suffix, false);
   }
 
-  async watch() {
-    await this.squadLayers.pull();
-
-    await this.rcon.connect();
-    await this.logParser.watch();
-
-    await this.updatePlayerList();
-    await this.updateLayerInformation();
-    await this.updateA2SInformation();
-
-    Logger.verbose('SquadServer', 1, `Watching ${this.serverName}...`);
-
-    await this.pingSquadJSAPI();
-  }
-
-  async unwatch() {
-    await this.rcon.disconnect();
-    await this.logParser.unwatch();
-  }
-
   async pingSquadJSAPI() {
     if (this.pingSquadJSAPITimeout) clearTimeout(this.pingSquadJSAPITimeout);
 
@@ -475,9 +477,9 @@ export default class SquadServer extends EventEmitter {
     const config = {
       // send minimal information on server
       server: {
-        host: this.configProvider.config.host,
-        queryPort: this.configProvider.config.queryPort,
-        logReaderMode: this.configProvider.config.logReaderMode
+        host: this.options.host,
+        queryPort: this.options.queryPort,
+        logReaderMode: this.options.logReaderMode
       },
 
       // we send all plugin information as none of that is sensitive.
