@@ -1,7 +1,6 @@
 # Project Files
 *.tmp
 
-index-test.js
 config-test.json
 
 # Dependencies
@@ -11,3 +10,4 @@ yarn.lock
 
 # IDEs
 .idea/
+.vscode/

@@ -1,0 +1,81 @@
+{
+  "server": {
+    "id": 1,
+
+    "host": "xxx.xxx.xxx.xxx",
+    "queryPort": 27165,
+    "rconPort": 21114,
+    "rconPassword": "password",
+    "rconVerbose": true,
+
+    "logReaderMode": "tail",
+    "logDir": "C:/path/to/squad/log/folder",
+    "ftpPort": 21,
+    "ftpUser": "FTP Username",
+    "ftpPassword": "FTP Password",
+    "ftpUseListForSize": false
+  },
+  "connectors": {
+    "discord": "Discord Login Token",
+    "sqlite": {
+      "database": "databasename",
+      "user": "bob",
+      "password": "bobs-secret",
+      "server": {
+        "host": "hos-if-you-have-remote-database",
+        "dialect": "sqlite",
+        "logging": false,
+        "storage": "path/to/database"
+      }
+    },
+    "squadlayerpool": {
+      "type": "buildPoolFromFilter",
+      "filter": {
+        "whitelistedLayers": null,
+        "blacklistedLayers": null,
+        "whitelistedMaps": null,
+        "blacklistedMaps": null,
+        "whitelistedGamemodes": null,
+        "blacklistedGamemodes": ["Training"],
+        "flagCountMin": null,
+        "flagCountMax": null,
+        "hasCommander": null,
+        "hasTanks": null,
+        "hasHelicopters": null
+      },
+      "activeLayerFilter": {
+        "historyResetTime": 18000000,
+        "layerHistoryTolerance": 8,
+        "mapHistoryTolerance": 4,
+        "gamemodeHistoryTolerance": {
+          "Invasion": 4
+        },
+        "gamemodeRepetitiveTolerance": {
+          "Invasion": 4
+        },
+        "playerCountComplianceEnabled": true,
+        "factionComplianceEnabled": true,
+        "factionHistoryTolerance": {
+          "RUS": 4
+        },
+        "factionRepetitiveTolerance": {
+          "RUS": 4
+        }
+      }
+    },
+    "mysql": {
+      "connectionLimit": 10,
+      "host": "host",
+      "port": 3306,
+      "user": "squadjs",
+      "password": "password",
+      "database": "squadjs"
+    }
+  },
+  "plugins": [],
+  "verboseness": {
+    "SquadServer": 1,
+    "LogParser": 1,
+    "RCON": 1
+  }
+}

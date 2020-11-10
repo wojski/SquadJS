@@ -28,13 +28,12 @@ jobs:
           run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
         - name: Get the version
           id: vars
-          run: echo ::set-output name=tag::$(echo ${GITHUB_REF:10})
+          run: echo ::set-output name=tag::${{ github.run_id }}
         - name: Build the tagged Docker image
-          run: docker build . --file Dockerfile --tag wojski/hsr-squadjs:experimental-CI-${{steps.vars.outputs.tag}}
+          run: docker build . --file Dockerfile --tag wojski/hsr-squadjs:experimental-CI-${{github.run_id}}
         - name: Push the tagged Docker image
-          run: docker push wojski/hsr-squadjs:experimental-CI-${{steps.vars.outputs.tag}}
+          run: docker push wojski/hsr-squadjs:experimental-CI-${{github.run_id}}
         #- name: Build the latest Docker image
         #  run: docker build . --file Dockerfile --tag pjlamb12/angular-cli:latest
         #- name: Push the latest Docker image
         #  run: docker push pjlamb12/angular-cli:latest
-
