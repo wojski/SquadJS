@@ -4,7 +4,7 @@ import axios from 'axios';
 import Discord from 'discord.js';
 import Gamedig from 'gamedig';
 import mysql from 'mysql';
-import Sequelize from 'Sequelize';
+import Sequelize from 'sequelize';
 
 import Logger from 'core/logger';
 import { SQUADJS_API_DOMAIN } from 'core/constants';
