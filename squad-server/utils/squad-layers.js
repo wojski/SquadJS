@@ -5,7 +5,7 @@ import Logger from 'core/logger';
 
 class SquadLayersBase {
   get layerNames() {
-    return this.layers.map((layer) => layer.name);
+    return this.layers.map((layer) => layer.layer);
   }
 
   getLayerByCondition(condition) {
@@ -22,7 +22,7 @@ class SquadLayersBase {
   }
 
   getLayerByLayerNameAutoCorrection(layerName) {
-    return this.getLayerByLayerName(didYouMean(layerName, this.layerNames()));
+    return this.getLayerByLayerName(didYouMean(layerName, this.layerNames));
   }
 
   getLayerByNumber(layerNumber) {
@@ -48,10 +48,14 @@ class SquadLayers extends SquadLayersBase {
   }
 
   buildPoolFromLayerNames(layerNames, activeFilter) {
-    return new SquadLayersPool(
-      this.layers.filter((layer) => layerNames.includes(layer.layer)),
-      activeFilter
-    );
+    // var layers =  this.layers.filter((layer) => layerNames.includes(layer.layer));
+    var layers = this.layers.filter((layer) => {
+      return layerNames.some((filteredLayer) => {
+        return layer.layer === filteredLayer.layer;
+      });
+    });
+
+    return new SquadLayersPool(layers, activeFilter);
   }
 
   buildPoolFromLayerNamesAutoCorrection(layerNames, activeFilter) {

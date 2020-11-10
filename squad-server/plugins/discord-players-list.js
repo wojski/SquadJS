@@ -3,7 +3,8 @@ import { COPYRIGHT_MESSAGE } from '../utils/constants.js';
 
 export default class DiscordPlayersList extends DiscordIntervalUpdatedMessage {
   static get description() {
-    return `<code>DiscordPlayerList</code> is a discord plugin displaying players currentley in each team. Two columns, each named by theyr fraction shorctcut.
+    return `<code>DiscordPlayerList</code> is a discord plugin displaying players currentley in each team. 
+        Two columns, each named by theyr fraction shorctcut.
         Side accent color can be modified.`;
   }
 
@@ -23,8 +24,9 @@ export default class DiscordPlayersList extends DiscordIntervalUpdatedMessage {
 
   constructor(server, options) {
     super(server, options);
-    this.TEAM_ONE_ID = '1';
+
     this.embedColor = options.embedColor;
+    this.TEAM_ONE_ID = '1';
   }
 
   buildPlayerListByTeam(playerArrayMixed) {

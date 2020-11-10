@@ -15,6 +15,8 @@ import Rcon from 'rcon/squad';
 import { SQUADJS_VERSION } from './utils/constants.js';
 import { SquadLayers } from './utils/squad-layers.js';
 
+import { NEW_GAME, CHAT_MESSAGE } from 'squad-server/server-events';
+
 import glob from 'glob';
 
 export default class SquadServer extends EventEmitter {
@@ -195,9 +197,9 @@ export default class SquadServer extends EventEmitter {
       autoReconnectInterval: config.rconAutoReconnectInterval
     });
 
-    rcon.on('CHAT_MESSAGE', async (data) => {
+    rcon.on(CHAT_MESSAGE, async (data) => {
       data.player = await this.getPlayerBySteamID(data.steamID);
-      this.emit('CHAT_MESSAGE', data);
+      this.emit(CHAT_MESSAGE, data);
 
       const command = data.message.match(/!([^ ]+) ?(.*)/);
       if (command)
@@ -250,7 +252,7 @@ export default class SquadServer extends EventEmitter {
       this.emit('ADMIN_BROADCAST', data);
     });
 
-    logParser.on('NEW_GAME', (data) => {
+    logParser.on(NEW_GAME, (data) => {
       let layer;
       if (data.layer) layer = this.squadLayers.getLayerByLayerName(data.layer);
       else layer = this.squadLayers.getLayerByLayerClassname(data.layerClassname);
@@ -258,7 +260,7 @@ export default class SquadServer extends EventEmitter {
       this.layerHistory.unshift({ ...layer, time: data.time });
       this.layerHistory = this.layerHistory.slice(0, this.layerHistoryMaxLength);
 
-      this.emit('NEW_GAME', data);
+      this.emit(NEW_GAME, data);
     });
 
     logParser.on('PLAYER_CONNECTED', async (data) => {

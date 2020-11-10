@@ -11,9 +11,12 @@ import DiscordRoundWinner from './discord-round-winner.js';
 import DiscordServerStatus from './discord-server-status.js';
 import DiscordSubsystemRestarter from './discord-subsystem-restarter.js';
 import IntervalledBroadcasts from './intervalled-broadcasts.js';
+import MapVote123 from './mapvote/mapvote-123.js';
+import MapVoteAutoComplete from './mapvote/mapvote-auto-complete.js';
 import SeedingMode from './seeding-mode.js';
 import TeamRandomizer from './team-randomizer.js';
 import DiscordPlayersList from './discord-players-list.js';
+import MapVoteExtended from './mapvote-extended/mapvote-extended.js';
 
 const plugins = [
   AutoTKWarn,
@@ -32,7 +35,10 @@ const plugins = [
   SeedingMode,
   TeamRandomizer,
   DiscordServerStatus,
-  DiscordPlayersList
+  DiscordPlayersList,
+  MapVoteAutoComplete,
+  MapVote123,
+  MapVoteExtended
 ];
 
 const pluginsByName = {};

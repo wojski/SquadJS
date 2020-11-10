@@ -19,6 +19,7 @@ export default class DiscordBasePlugin extends BasePlugin {
 
     this.discordClient = options.discordClient;
     this.channel = null;
+    this.discordClient = options.discordClient;
   }
 
   async sendDiscordMessage(message, channelID = this.options.channelID) {

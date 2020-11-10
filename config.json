@@ -32,10 +32,15 @@
         "whitelistedLayers": null,
         "blacklistedLayers": null,
         "whitelistedMaps": null,
-        "blacklistedMaps": null,
+        "blacklistedMaps": [
+          "CAF Nanisivik"
+        ],
         "whitelistedGamemodes": null,
         "blacklistedGamemodes": [
-          "Training"
+          "Training",
+          "Tutorials",
+          "TA",
+          "Destruction"
         ],
         "flagCountMin": null,
         "flagCountMax": null,
@@ -53,7 +58,7 @@
         "gamemodeRepetitiveTolerance": {
           "Invasion": 4
         },
-        "playerCountComplianceEnabled": true,
+        "playerCountComplianceEnabled": false,
         "factionComplianceEnabled": true,
         "factionHistoryTolerance": {
           "RUS": 4
@@ -204,6 +209,125 @@
       "interval": 300,
       "storage": "sqlite",
       "embedColor": "#FFFFFF"
+    },
+    {
+      "plugin": "MapVote123",
+      "enabled": false,
+      "minVoteCount": null
+    },
+    {
+      "plugin": "MapVoteAutoComplete",
+      "enabled": false,
+      "layerFilter": "squadlayerpool",
+      "alwaysOn": true,
+      "minPlayerCount": null,
+      "minVoteCount": null
+    },
+    {
+      "plugin": "MapVoteExtended",
+      "enabled": true,
+      "voteTime": 240,
+      "layerFilter": "squadlayerpool",
+      "autoVoting": {
+        "isEnabled": true,
+        "triggers": [
+          {
+            "name": "timeTrigger",
+            "type": 2,
+            "value": 900
+          }
+        ]
+      },
+      "nomination": {
+        "isEnabled": true,
+        "isNominationTriggerVote": true,
+        "voteDelayAfterFirstNominate": 300
+      },
+      "broadcast": {
+        "enablefirstInformationBroadcasting": true,
+        "firstInformationBroadcastingDelay": 60,
+        "enableNominationBroadcasting": true,
+        "enableVoteStatusBroadcasting": true,
+        "voteStatusBroadcastingDelay": 30
+      },
+      "mapBasketOptions": {
+        "customFilters": [
+          {
+            "name": "SeedFilter",
+            "type": "ALLOW ONLY LAYERS",
+            "layers": [
+              "Al Basrah Skirmish v1",
+              "Al Basrah Skirmish v2",
+              "Belaya Skirmish v1",
+              "Chora Skirmish v1",
+              "Fallujah Skirmish v1",
+              "Fallujah Skirmish v2",
+              "Fool's Road Skirmish v1",
+              "Fool's Road Skirmish v2",
+              "Gorodok Skirmish v1",
+              "Kamdesh Skirmish v1",
+              "Kohat Skirmish v1",
+              "Kokan Skirmish v1",
+              "Lashkar Valley Skirmish v1",
+              "Logar Valley Skirmish v1",
+              "Mestia Skirmish v1",
+              "Mutaha Skirmish v1",
+              "Narva Skirmish v1",
+              "Skorpo Skirmish v1",
+              "Sumari Skirmish v1",
+              "Tallil Outskirts Skirmish v1",
+              "Tallil Outskirts Skirmish v2",
+              "Tallil Outskirts Skirmish v3",
+              "Yehorivka Skirmish v1",
+              "Yehorivka Skirmish v2",
+              "Yehorivka Skirmish v3",
+              "CAF_Manic-5_Skirmish_v1",
+              "CAF_Manic-5_Skirmish_v2",
+              "Chora AAS v1",
+              "Chora AAS v2",
+              "Sumari AAS v1"
+            ],
+            "conditions": {
+              "isSeed": true
+            },
+            "filterResponse": "{__LAYER__} is not available during seed"
+          },
+          {
+            "name": "BlockSkirmish",
+            "type": "BLOCK MODE",
+            "gameModes": [
+              "Skirmish"
+            ],
+            "conditions": {
+              "isSeed": false
+            },
+            "filterResponse": "Skirmish gamemode not available after seed"
+          },
+          {
+            "name": "DecreaseVoteAmount",
+            "type": "DECREASE MODE",
+            "gameModes": [
+              "TC",
+              "Invasion",
+              "Insurgency",
+              "Destruction",
+              "Skirmish"
+            ],
+            "maxAmount": 1,
+            "conditions": {
+              "isSeed": false
+            }
+          },
+          {
+            "name": "DeduplicateMap",
+            "type": "DEDUPLICATE MAP",
+            "maxAmount": 1,
+            "conditions": {
+              "isSeed": false
+            }
+          }
+        ]
+      }
     }
   ],
   "verboseness": {
