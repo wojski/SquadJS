@@ -57,7 +57,7 @@ export default class SquadServer extends EventEmitter {
         plugins = await plugins;
 
         try {
-          if (plugin.name === 'BasePlugin') {
+          if (plugin.name === 'BasePlugin' || plugin.name === undefined) {
             return plugins;
           }
           // check if BasePlugin is implemented to make shore its a plugin
@@ -129,8 +129,8 @@ export default class SquadServer extends EventEmitter {
         Logger.verbose('SquadServer', 1, `Starting squadlayerfilter connector ${connectorName}...`);
         // ?? SquadLayers is present both in SquadServer and connectors array
         connector = this.squadLayers[connectorConfig.type](
-          connectorName.filter,
-          connectorName.activeLayerFilter
+          connectorConfig.filter,
+          connectorConfig.activeLayerFilter
         );
         break;
       case 'databaseClient':
