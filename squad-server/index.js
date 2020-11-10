@@ -50,7 +50,7 @@ export default class SquadServer extends EventEmitter {
     Logger.verbose('SquadServer', 1, 'Seting up plugins...');
     // Get all potential plugin files from plugin directory
     glob
-      .sync('./plugins/*.js', { cwd: './squad-server/' })
+      .sync('./plugins{/*.js,/*/*.js}', { cwd: './squad-server/' })
       .reduce(async (plugins, file) => {
         // import potential plugin class from file name
         const { default: plugin } = await import(file);
