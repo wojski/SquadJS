@@ -1,6 +1,7 @@
 import EventEmitter from 'events';
 import { FINAL_MAP_FETCH, START_NEW_MAP } from 'mapvote-extended/constants';
 import { GetTimeText } from 'mapvote-extended/helpers';
+import Logger from 'core/logger';
 
 export default class VoteEngine extends EventEmitter {
   constructor(server, options, synchro) {
@@ -64,6 +65,14 @@ export default class VoteEngine extends EventEmitter {
         option = x;
       }
     });
+
+    Logger.verbose(
+      'MAPVOTE_EXTENDED',
+      2,
+      `${new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')} VOTE - ${JSON.stringify(
+        this.options
+      )}`
+    );
 
     this.synchro.endVote(option.layer);
   }

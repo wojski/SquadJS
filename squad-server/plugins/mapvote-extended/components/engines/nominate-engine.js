@@ -1,6 +1,7 @@
 import EventEmitter from 'events';
 import { GetTimeText } from 'mapvote-extended/helpers';
 import { TRIGGER_START_VOTE, START_NEW_MAP, PLUGIN_STATE_SWITCH } from 'mapvote-extended/constants';
+import Logger from 'core/logger';
 
 export default class NominateEngine extends EventEmitter {
   constructor(options, mapBasket, synchro) {
@@ -133,6 +134,15 @@ export default class NominateEngine extends EventEmitter {
     }
 
     this.isVoteStarted = true;
+
+    Logger.verbose(
+      'MAPVOTE_EXTENDED',
+      2,
+      `${new Date()
+        .toISOString()
+        .replace(/T/, ' ')
+        .replace(/\..+/, '')} NOMINATIONS - ${JSON.stringify(nominations)}`
+    );
 
     this.synchro.nominationFetched(nominations);
   }
