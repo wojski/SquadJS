@@ -1,25 +1,18 @@
 import EventEmitter from 'events';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import path from 'path';
 
 import axios from 'axios';
-import Discord from 'discord.js';
 import Gamedig from 'gamedig';
-import mysql from 'mysql';
 
 import Logger from 'core/logger';
 import { SQUADJS_API_DOMAIN } from 'core/constants';
 
-import LogParser from 'log-parser';
-import Rcon from 'rcon/squad';
+import LogParser from './log-parser/index.js';
+import Rcon from './rcon.js';
 
 import { SQUADJS_VERSION } from './utils/constants.js';
 import { SquadLayers } from './utils/squad-layers.js';
 
-import plugins from './plugins/index.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import fetchAdminLists from './utils/admin-lists.js';
 
 export default class SquadServer extends EventEmitter {
   constructor(options = {}) {
@@ -28,6 +21,7 @@ export default class SquadServer extends EventEmitter {
     for (const option of ['host', 'queryPort'])
       if (!(option in options)) throw new Error(`${option} must be specified.`);
 
+    this.id = options.id;
     this.options = options;
 
     this.layerHistory = [];
@@ -41,6 +35,7 @@ export default class SquadServer extends EventEmitter {
 
     this.setupRCON();
     this.setupLogParser();
+    this.admins = fetchAdminLists(options.adminLists);
 
     this.updatePlayerList = this.updatePlayerList.bind(this);
     this.updatePlayerListInterval = 30 * 1000;
@@ -60,6 +55,11 @@ export default class SquadServer extends EventEmitter {
   }
 
   async watch() {
+    Logger.verbose(
+      'SquadServer',
+      1,
+      `Beginning to watch ${this.options.host}:${this.options.queryPort}...`
+    );
     await this.squadLayers.pull();
 
     await this.rcon.connect();
@@ -81,7 +81,7 @@ export default class SquadServer extends EventEmitter {
 
   setupRCON() {
     this.rcon = new Rcon({
-      host: this.options.host,
+      host: this.options.rconHost || this.options.host,
       port: this.options.rconPort,
       password: this.options.rconPassword,
       autoReconnectInterval: this.options.rconAutoReconnectInterval
@@ -140,11 +140,10 @@ export default class SquadServer extends EventEmitter {
     });
 
     this.logParser.on('NEW_GAME', (data) => {
-      let layer;
-      if (data.layer) layer = this.squadLayers.getLayerByLayerName(data.layer);
-      else layer = this.squadLayers.getLayerByLayerClassname(data.layerClassname);
+      if (data.layer) data.layer = this.squadLayers.getLayerByLayerName(data.layer);
+      else data.layer = this.squadLayers.getLayerByLayerClassname(data.layerClassname);
 
-      this.layerHistory.unshift({ ...layer, time: data.time });
+      this.layerHistory.unshift({ ...data.layer, time: data.time });
       this.layerHistory = this.layerHistory.slice(0, this.layerHistoryMaxLength);
 
       this.emit('NEW_GAME', data);
@@ -193,7 +192,6 @@ export default class SquadServer extends EventEmitter {
 
     this.logParser.on('PLAYER_DIED', async (data) => {
       data.victim = await this.getPlayerByName(data.victimName);
-      data.attacker = await this.getPlayerByName(data.attackerName);
 
       if (data.victim && data.attacker)
         data.teamkill =
@@ -252,8 +250,22 @@ export default class SquadServer extends EventEmitter {
     await this.logParser.watch();
   }
 
+  async getAdminBySteamID(steamID) {
+    return this.admins[steamID];
+  }
+
+  async getAdminsWithPermission(perm) {
+    const ret = [];
+    for (const [steamID, perms] of Object.entries(this.admins)) {
+      if (perm in perms) ret.push(this.admins[steamID]);
+    }
+    return ret;
+  }
+
   async updatePlayerList() {
     if (this.updatePlayerListTimeout) clearTimeout(this.updatePlayerListTimeout);
+
+    Logger.verbose('SquadServer', 1, `Updating player list...`);
 
     try {
       const oldPlayerInfo = {};
@@ -265,15 +277,37 @@ export default class SquadServer extends EventEmitter {
         ...oldPlayerInfo[player.steamID],
         ...player
       }));
+
+      for (const player of this.players) {
+        if (typeof oldPlayerInfo[player.steamID] === 'undefined') continue;
+        if (player.teamID !== oldPlayerInfo[player.steamID].teamID)
+          this.emit('PLAYER_TEAM_CHANGE', {
+            player: player,
+            oldTeamID: oldPlayerInfo[player.steamID].teamID,
+            newTeamID: player.teamID
+          });
+        if (player.squadID !== oldPlayerInfo[player.steamID].squadID)
+          this.emit('PLAYER_SQUAD_CHANGE', {
+            player: player,
+            oldSquadID: oldPlayerInfo[player.steamID].squadID,
+            newSquadID: player.squadID
+          });
+      }
+
+      this.emit('UPDATED_PLAYER_INFORMATION');
     } catch (err) {
       Logger.verbose('SquadServer', 1, 'Failed to update player list.', err);
     }
+
+    Logger.verbose('SquadServer', 1, `Updated player list.`);
 
     this.updatePlayerListTimeout = setTimeout(this.updatePlayerList, this.updatePlayerListInterval);
   }
 
   async updateLayerInformation() {
     if (this.updateLayerInformationTimeout) clearTimeout(this.updateLayerInformationTimeout);
+
+    Logger.verbose('SquadServer', 1, `Updating layer information...`);
 
     try {
       const layerInfo = await this.rcon.getLayerInfo();
@@ -286,9 +320,13 @@ export default class SquadServer extends EventEmitter {
       }
 
       this.nextLayer = layerInfo.nextLayer;
+
+      this.emit('UPDATED_LAYER_INFORMATION');
     } catch (err) {
       Logger.verbose('SquadServer', 1, 'Failed to update layer information.', err);
     }
+
+    Logger.verbose('SquadServer', 1, `Updated layer information.`);
 
     this.updateLayerInformationTimeout = setTimeout(
       this.updateLayerInformation,
@@ -298,6 +336,8 @@ export default class SquadServer extends EventEmitter {
 
   async updateA2SInformation() {
     if (this.updateA2SInformationTimeout) clearTimeout(this.updateA2SInformationTimeout);
+
+    Logger.verbose('SquadServer', 1, `Updating A2S information...`);
 
     try {
       const data = await Gamedig.query({
@@ -318,9 +358,13 @@ export default class SquadServer extends EventEmitter {
 
       this.matchTimeout = parseFloat(data.raw.rules.MatchTimeout_f);
       this.gameVersion = data.raw.version;
+
+      this.emit('UPDATED_A2S_INFORMATION');
     } catch (err) {
       Logger.verbose('SquadServer', 1, 'Failed to update A2S information.', err);
     }
+
+    Logger.verbose('SquadServer', 1, `Updated A2S information.`);
 
     this.updateA2SInformationTimeout = setTimeout(
       this.updateA2SInformation,
@@ -328,13 +372,15 @@ export default class SquadServer extends EventEmitter {
     );
   }
 
-  async getPlayerByCondition(condition, retry = true) {
+  async getPlayerByCondition(condition, forceUpdate = false, retry = true) {
     let matches;
 
-    matches = this.players.filter(condition);
-    if (matches.length === 1) return matches[0];
+    if (!forceUpdate) {
+      matches = this.players.filter(condition);
+      if (matches.length === 1) return matches[0];
 
-    if (!retry) return null;
+      if (!retry) return null;
+    }
 
     await this.updatePlayerList();
 
@@ -344,16 +390,16 @@ export default class SquadServer extends EventEmitter {
     return null;
   }
 
-  async getPlayerBySteamID(steamID) {
-    return this.getPlayerByCondition((player) => player.steamID === steamID);
+  async getPlayerBySteamID(steamID, forceUpdate) {
+    return this.getPlayerByCondition((player) => player.steamID === steamID, forceUpdate);
   }
 
-  async getPlayerByName(name) {
-    return this.getPlayerByCondition((player) => player.name === name);
+  async getPlayerByName(name, forceUpdate) {
+    return this.getPlayerByCondition((player) => player.name === name, forceUpdate);
   }
 
-  async getPlayerByNameSuffix(suffix) {
-    return this.getPlayerByCondition((player) => player.suffix === suffix, false);
+  async getPlayerByNameSuffix(suffix, forceUpdate) {
+    return this.getPlayerByCondition((player) => player.suffix === suffix, forceUpdate, false);
   }
 
   async pingSquadJSAPI() {
@@ -399,209 +445,5 @@ export default class SquadServer extends EventEmitter {
     }
 
     this.pingSquadJSAPITimeout = setTimeout(this.pingSquadJSAPI, this.pingSquadJSAPIInterval);
-  }
-
-  /// ///////////////////////////////////////////////////////////////////////
-  // Should consider moving the following to a factory class of some kind. //
-  // ////////////////////////////////////////////////////////////////////////
-  static async buildFromConfig(config) {
-    // Setup logging levels
-    for (const [module, verboseness] of Object.entries(config.verboseness)) {
-      Logger.setVerboseness(module, verboseness);
-    }
-
-    Logger.verbose('SquadServer', 1, 'Creating SquadServer...');
-    const server = new SquadServer(config.server);
-
-    // pull layers read to use to create layer filter connectors
-    await server.squadLayers.pull();
-
-    Logger.verbose('SquadServer', 1, 'Preparing connectors...');
-    const connectors = {};
-    for (const pluginConfig of config.plugins) {
-      if (!pluginConfig.enabled) continue;
-
-      const Plugin = plugins[pluginConfig.plugin];
-
-      for (const [optionName, option] of Object.entries(Plugin.optionsSpecification)) {
-        // ignore non connectors
-        if (!option.connector) continue;
-
-        if (!(optionName in pluginConfig))
-          throw new Error(
-            `${Plugin.name}: ${optionName} (${option.connector} connector) is missing.`
-          );
-
-        const connectorName = pluginConfig[optionName];
-
-        // skip already created connectors
-        if (connectors[connectorName]) continue;
-
-        const connectorConfig = config.connectors[connectorName];
-
-        if (option.connector === 'discord') {
-          Logger.verbose('SquadServer', 1, `Starting discord connector ${connectorName}...`);
-          connectors[connectorName] = new Discord.Client();
-          await connectors[connectorName].login(connectorConfig);
-        } else if (option.connector === 'mysql') {
-          Logger.verbose('SquadServer', 1, `Starting mysqlPool connector ${connectorName}...`);
-          connectors[connectorName] = mysql.createPool(connectorConfig);
-        } else if (option.connector === 'squadlayerpool') {
-          Logger.verbose(
-            'SquadServer',
-            1,
-            `Starting squadlayerfilter connector ${connectorName}...`
-          );
-          connectors[connectorName] = server.squadLayers[connectorConfig.type](
-            connectorConfig.filter,
-            connectorConfig.activeLayerFilter
-          );
-        } else {
-          throw new Error(`${option.connector} is an unsupported connector type.`);
-        }
-      }
-    }
-
-    Logger.verbose('SquadServer', 1, 'Applying plugins to SquadServer...');
-    for (const pluginConfig of config.plugins) {
-      if (!pluginConfig.enabled) continue;
-
-      if (!plugins[pluginConfig.plugin])
-        throw new Error(`Plugin ${pluginConfig.plugin} does not exist.`);
-
-      const Plugin = plugins[pluginConfig.plugin];
-
-      Logger.verbose('SquadServer', 1, `Initialising ${Plugin.name}...`);
-
-      const options = {};
-      for (const [optionName, option] of Object.entries(Plugin.optionsSpecification)) {
-        if (option.connector) {
-          options[optionName] = connectors[pluginConfig[optionName]];
-        } else {
-          if (option.required) {
-            if (!(optionName in pluginConfig))
-              throw new Error(`${Plugin.name}: ${optionName} is required but missing.`);
-            if (option.default === pluginConfig[optionName])
-              throw new Error(
-                `${Plugin.name}: ${optionName} is required but is the default value.`
-              );
-          }
-
-          options[optionName] = pluginConfig[optionName] || option.default;
-        }
-      }
-
-      server.plugins.push(new Plugin(server, options, pluginConfig));
-    }
-
-    return server;
-  }
-
-  static parseConfig(configString) {
-    try {
-      return JSON.parse(configString);
-    } catch (err) {
-      throw new Error('Unable to parse config file.');
-    }
-  }
-
-  static buildFromConfigString(configString) {
-    Logger.verbose('SquadServer', 1, 'Parsing config string...');
-    return SquadServer.buildFromConfig(SquadServer.parseConfig(configString));
-  }
-
-  static readConfigFile(configPath = './config.json') {
-    configPath = path.resolve(__dirname, '../', configPath);
-    if (!fs.existsSync(configPath)) throw new Error('Config file does not exist.');
-    return fs.readFileSync(configPath, 'utf8');
-  }
-
-  static buildFromConfigFile(configPath) {
-    Logger.verbose('SquadServer', 1, 'Reading config file...');
-    return SquadServer.buildFromConfigString(SquadServer.readConfigFile(configPath));
-  }
-
-  static buildConfig() {
-    const templatePath = path.resolve(__dirname, './templates/config-template.json');
-    const templateString = fs.readFileSync(templatePath, 'utf8');
-    const template = SquadServer.parseConfig(templateString);
-
-    const pluginKeys = Object.keys(plugins).sort((a, b) =>
-      a.name < b.name ? -1 : a.name > b.name ? 1 : 0
-    );
-
-    for (const pluginKey of pluginKeys) {
-      const Plugin = plugins[pluginKey];
-
-      const pluginConfig = { plugin: Plugin.name, enabled: Plugin.defaultEnabled };
-      for (const [optionName, option] of Object.entries(Plugin.optionsSpecification)) {
-        pluginConfig[optionName] = option.default;
-      }
-
-      template.plugins.push(pluginConfig);
-    }
-
-    return template;
-  }
-
-  static buildConfigFile() {
-    const configPath = path.resolve(__dirname, '../config.json');
-    const config = JSON.stringify(SquadServer.buildConfig(), null, 2);
-    fs.writeFileSync(configPath, config);
-  }
-
-  static buildReadmeFile() {
-    const pluginKeys = Object.keys(plugins).sort((a, b) =>
-      a.name < b.name ? -1 : a.name > b.name ? 1 : 0
-    );
-
-    const pluginInfo = [];
-
-    for (const pluginName of pluginKeys) {
-      const Plugin = plugins[pluginName];
-
-      const options = [];
-      for (const [optionName, option] of Object.entries(Plugin.optionsSpecification)) {
-        let optionInfo = `<h4>${optionName}${option.required ? ' (Required)' : ''}</h4>
-           <h6>Description</h6>
-           <p>${option.description}</p>
-           <h6>Default</h6>
-           <pre><code>${
-             typeof option.default === 'object'
-               ? JSON.stringify(option.default, null, 2)
-               : option.default
-           }</code></pre>`;
-
-        if (option.example)
-          optionInfo += `<h6>Example</h6>
-           <pre><code>${
-             typeof option.example === 'object'
-               ? JSON.stringify(option.example, null, 2)
-               : option.example
-           }</code></pre>`;
-
-        options.push(optionInfo);
-      }
-
-      pluginInfo.push(
-        `<details>
-          <summary>${Plugin.name}</summary>
-          <h2>${Plugin.name}</h2>
-          <p>${Plugin.description}</p>
-          <h3>Options</h3>
-          ${options.join('\n')}
-        </details>`
-      );
-    }
-
-    const pluginInfoText = pluginInfo.join('\n\n');
-
-    const templatePath = path.resolve(__dirname, './templates/readme-template.md');
-    const template = fs.readFileSync(templatePath, 'utf8');
-
-    const readmePath = path.resolve(__dirname, '../README.md');
-    const readme = template.replace(/\/\/PLUGIN-INFO\/\//, pluginInfoText);
-
-    fs.writeFileSync(readmePath, readme);
   }
 }

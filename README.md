@@ -22,6 +22,8 @@
 SquadJS is a scripting framework, designed for Squad servers, that aims to handle all communication and data collection to and from the servers. Using SquadJS as the base to any of your scripting projects allows you to easily write complex plugins without having to worry about the hassle of RCON or log parsing. However, for your convenience SquadJS comes shipped with multiple plugins already built for you allowing you to experience the power of SquadJS right away.
 
 ## Using SquadJS
+SquadJS relies on being able to access the Squad server log directory in order to parse logs live to collect information. Thus, SquadJS must be hosted on the same server box as your Squad server or be connected to your Squad server via FTP.
+
 ### Prerequisites
  * Git
  * [Node.js](https://nodejs.org/en/) (Current) - [Download](https://nodejs.org/en/)
@@ -62,6 +64,7 @@ The following section of the configuration contains information about your Squad
  * `rconPort` - The RCON port of the server.
  * `rconPassword` - The RCON password of the server.
  * `logReaderMode` - `tail` will read from a local log file. `ftp` will read from a remote log file using the FTP protocol.
+ * `logDir` - The folder where your Squad logs are saved. Most likely will be `C:/servers/squad_server/SquadGame/Saved/Logs`.
  * `ftpPort` - The FTP port of the server. Only required for `ftp` `logReaderMode`.
  * `ftpUser` - The FTP user of the server. Only required for `ftp` `logReaderMode`.
  * `ftpPassword` - The FTP password of the server. Only required for `ftp` `logReaderMode`.
@@ -77,13 +80,6 @@ Connectors allow SquadJS to communicate with external resources.
 Connectors should be named, for example the above is named `discord`, and should have the associated config against it. Configs can be specified by name in plugin options. Should a connector not be needed by any plugin then the default values can be left or you can remove it from your config file.
 
 See below for more details on connectors and their associated config.
-
-##### Discord
-Connects to Discord via `discord.js`.
-```json
-"discord": "Discord Login Token",
-```
-Requires a Discord bot login token.
 
 ##### Squad Layer Filter
 Connects to a filtered list of Squad layers and filters them either by an "initial filter" or an "active filter" that depends on current server information, e.g. player count.
@@ -153,19 +149,33 @@ Connects to a filtered list of Squad layers and filters them either by an "initi
    - `factionHistoryTolerance` - A faction can only be played again after this number of layers. Factions can be specified individually inside the object. If they are not listed then the filter is not applied.
    - `factionRepetitiveTolerance` - A faction can only be played this number of times in a row. Factions can be specified individually inside the object. If they are not listed then the filter is not applied.  
 
-##### MySQL
-Connects to a MySQL database.
+##### Discord
+Connects to Discord via `discord.js`.
 ```json
-"mysql": {
-  "connectionLimit": 10,
-  "host": "host",
-  "port": 3306,
-  "user": "squadjs",
-  "password": "password",
-  "database": "squadjs"
+"discord": "Discord Login Token",
+```
+Requires a Discord bot login token.
+
+
+##### Databases
+SquadJS uses [Sequelize](https://sequelize.org/) to connect and use a wide range of SQL databases.
+
+The connector should be configured using any of Sequelize's single argument configuration options.
+
+For example:
+```json
+"mysql": "mysql://user:pass@example.com:5432/dbname"
+```
+
+or:
+```json
+"sqlite": {
+    "dialect": "sqlite",
+    "storage": "path/to/database.sqlite"
 }
 ```
-The config is a set of pool connection options as listed in the [Node.js mysql](https://www.npmjs.com/package/mysql) documentation.
+
+See [Sequelize's documentation](https://sequelize.org/master/manual/getting-started.html#connecting-to-a-database) for more details.
 
 #### Plugins
 The `plugins` section in your config file lists all plugins built into SquadJS, e.g.:
@@ -185,6 +195,53 @@ Plugin options are also specified. A full list of plugin options can be seen bel
 
 ## Plugins
 The following is a list of plugins built into SquadJS, you can click their title for more information:
+
+<details>
+          <summary>AutoKickUnassigned</summary>
+          <h2>AutoKickUnassigned</h2>
+          <p>The <code>AutoKickUnassigned</code> plugin will automatically kick players that are not in a squad after a specified ammount of time.</p>
+          <h3>Options</h3>
+          <h4>warningMessage</h4>
+           <h6>Description</h6>
+           <p>Message SquadJS will send to players warning them they will be kicked</p>
+           <h6>Default</h6>
+           <pre><code>Join a squad, you are are unassigned and will be kicked</code></pre>
+<h4>kickMessage</h4>
+           <h6>Description</h6>
+           <p>Message to send to players when they are kicked</p>
+           <h6>Default</h6>
+           <pre><code>Unassigned - automatically removed</code></pre>
+<h4>frequencyOfWarnings</h4>
+           <h6>Description</h6>
+           <p>How often in seconds should we warn the player about being unassigned?</p>
+           <h6>Default</h6>
+           <pre><code>30</code></pre>
+<h4>unassignedTimer</h4>
+           <h6>Description</h6>
+           <p>How long in minutes to wait before a player that is unassigned is kicked</p>
+           <h6>Default</h6>
+           <pre><code>6</code></pre>
+<h4>playerThreshold</h4>
+           <h6>Description</h6>
+           <p>Player count required for AutoKick to start kicking players to disable set to -1 to disable</p>
+           <h6>Default</h6>
+           <pre><code>93</code></pre>
+<h4>roundStartDelay</h4>
+           <h6>Description</h6>
+           <p>Time delay in minutes from start of the round before AutoKick starts kicking again</p>
+           <h6>Default</h6>
+           <pre><code>15</code></pre>
+<h4>ignoreAdmins</h4>
+           <h6>Description</h6>
+           <p>Whether or not admins will be auto kicked for being unassigned</p>
+           <h6>Default</h6>
+           <pre><code>false</code></pre>
+<h4>ignoreWhitelist</h4>
+           <h6>Description</h6>
+           <p>Whether or not players in the whitelist will be auto kicked for being unassigned</p>
+           <h6>Default</h6>
+           <pre><code>false</code></pre>
+        </details>
 
 <details>
           <summary>AutoTKWarn</summary>
@@ -215,6 +272,30 @@ The following is a list of plugins built into SquadJS, you can click their title
     "ignoreChats": []
   }
 ]</code></pre>
+        </details>
+
+<details>
+          <summary>DBLog</summary>
+          <h2>DBLog</h2>
+          <p>The <code>mysql-log</code> plugin will log various server statistics and events to a database. This is great for server performance monitoring and/or player stat tracking.
+
+Grafana (NOT YET WORKING WITH V2):
+ * [Grafana](https://grafana.com/) is a cool way of viewing server statistics stored in the database.
+ * Install Grafana.
+ * Add your database as a datasource named <code>SquadJS</code>.
+ * Import the [SquadJS Dashboard](https://github.com/Thomas-Smyth/SquadJS/blob/master/plugins/mysql-log/SquadJS-Dashboard.json) to get a preconfigured MySQL only Grafana dashboard.
+ * Install any missing Grafana plugins.</p>
+          <h3>Options</h3>
+          <h4>database (Required)</h4>
+           <h6>Description</h6>
+           <p>The Sequelize connector to log server information to.</p>
+           <h6>Default</h6>
+           <pre><code>mysql</code></pre>
+<h4>overrideServerID</h4>
+           <h6>Description</h6>
+           <p>A overridden server ID.</p>
+           <h6>Default</h6>
+           <pre><code>null</code></pre>
         </details>
 
 <details>
@@ -385,23 +466,6 @@ The following is a list of plugins built into SquadJS, you can click their title
         </details>
 
 <details>
-          <summary>DiscordPlaceholder</summary>
-          <h2>DiscordPlaceholder</h2>
-          <p>The <code>DiscordPlaceholder</code> plugin can be used to create placeholder messages in Discord for use by other plugins.</p>
-          <h3>Options</h3>
-          <h4>discordClient (Required)</h4>
-           <h6>Description</h6>
-           <p>Discord connector name.</p>
-           <h6>Default</h6>
-           <pre><code>discord</code></pre>
-<h4>command</h4>
-           <h6>Description</h6>
-           <p>Command that triggers the placeholder message.</p>
-           <h6>Default</h6>
-           <pre><code>!placeholder</code></pre>
-        </details>
-
-<details>
           <summary>DiscordRcon</summary>
           <h2>DiscordRcon</h2>
           <p>The <code>DiscordRcon</code> plugin allows a specified Discord channel to be used as a RCON console to run RCON commands.</p>
@@ -511,6 +575,34 @@ The following is a list of plugins built into SquadJS, you can click their title
         </details>
 
 <details>
+          <summary>DiscordTeamkill</summary>
+          <h2>DiscordTeamkill</h2>
+          <p>The <code>DiscordTeamkill</code> plugin logs teamkills and related information to a Discord channel for admins to review.</p>
+          <h3>Options</h3>
+          <h4>discordClient (Required)</h4>
+           <h6>Description</h6>
+           <p>Discord connector name.</p>
+           <h6>Default</h6>
+           <pre><code>discord</code></pre>
+<h4>channelID (Required)</h4>
+           <h6>Description</h6>
+           <p>The ID of the channel to log teamkills to.</p>
+           <h6>Default</h6>
+           <pre><code></code></pre><h6>Example</h6>
+           <pre><code>667741905228136459</code></pre>
+<h4>color</h4>
+           <h6>Description</h6>
+           <p>The color of the embeds.</p>
+           <h6>Default</h6>
+           <pre><code>16761867</code></pre>
+<h4>disableSCBL</h4>
+           <h6>Description</h6>
+           <p>Disable Squad Community Ban List information.</p>
+           <h6>Default</h6>
+           <pre><code>false</code></pre>
+        </details>
+
+<details>
           <summary>IntervalledBroadcasts</summary>
           <h2>IntervalledBroadcasts</h2>
           <p>The <code>IntervalledBroadcasts</code> plugin allows you to set broadcasts, which will be broadcasted at preset intervals</p>
@@ -616,14 +708,11 @@ function aPluginToLogPlayerCountEvery60Seconds(server){
 A more common approach in this version of SquadJS is to react to an event happening:
 ```js
 function aPluginToLogTeamkills(server){
-  server.on(TEAMKILL, info => {
+  server.on('TEAMKILL', info => {
     console.log(info);
   });
 }
 ```
-
-A complete list of events that you can listen for and the information included within each is found [here](https://github.com/Thomas-Smyth/SquadJS/blob/master/squad-server/events.js).
-
 Various actions can be completed in a plugin. Most of these will involve outside system, e.g. Discord.js to run a Discord bot, so they are not documented here. However, you may run RCON commands using `server.rcon.execute("Command");`.
 
 If you're struggling to create a plugin, the existing [`plugins`](https://github.com/Thomas-Smyth/SquadJS/tree/master/plugins) are a good place to go for examples or feel free to ask for help in the Squad RCON Discord. 
@@ -640,12 +729,12 @@ Below is a list of scenarios we know may cause some information to be inaccurate
 
 ## Credits
 SquadJS would not be possible without the support of so many individuals and organisations. My thanks goes out to:
+ * [SquadJS's contributors](https://github.com/Thomas-Smyth/SquadJS/graphs/contributors).
+ * [My GitHub sponsors](https://github.com/sponsors/Thomas-Smyth)!
  * subtlerod for proposing the initial log parsing idea, helping to design the log parsing process and for providing multiple servers to test with.
  * Fourleaf, Mex and various other members of ToG / ToG-L for helping to stage logs and participate in small scale tests.
- * The Coalition community, including those that participate in Wednesday Fight Night, for participating in larger scale tests and for providing feedback on plugins.
- * My GitHub sponsors!
- * Everyone in the Squad RCON Discord and others who have submitted bug reports, suggestions and feedback.
- * iDronee for providing Linux Squad server logs to ensure log parsing regexes support the OS.
+ * Various Squad servers/communities for participating in larger scale tests and for providing feedback on plugins.
+ * Everyone in the Squad RCON Discord and others who have submitted bug reports, suggestions, feedback and provided logs.
 
 ## License
 ```

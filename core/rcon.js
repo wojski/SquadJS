@@ -2,7 +2,7 @@ import EventEmitter from 'events';
 import net from 'net';
 import util from 'util';
 
-import Logger from 'core/logger';
+import Logger from './logger.js';
 
 const SERVERDATA_EXECCOMMAND = 0x02;
 const SERVERDATA_RESPONSE_VALUE = 0x00;
@@ -114,7 +114,9 @@ export default class Rcon extends EventEmitter {
 
     const packets = [];
 
-    while (this.incomingData.byteLength > 0) {
+    // we check that it's greater than 4 as if it's not then the length header is not fully present which breaks the
+    // rest of the code. We just need to wait for more data.
+    while (this.incomingData.byteLength >= 4) {
       const size = this.incomingData.readInt32LE(0);
       const packetSize = size + 4;
 
@@ -162,20 +164,7 @@ export default class Rcon extends EventEmitter {
     };
   }
 
-  processChatPacket(decodedPacket) {
-    const match = decodedPacket.body.match(
-      /\[(ChatAll|ChatTeam|ChatSquad|ChatAdmin)] \[SteamID:([0-9]{17})] (.+?) : (.*)/
-    );
-
-    this.emit('CHAT_MESSAGE', {
-      raw: decodedPacket.body,
-      chat: match[1],
-      steamID: match[2],
-      name: match[3],
-      message: match[4],
-      time: new Date()
-    });
-  }
+  processChatPacket(decodedPacket) {}
 
   onClose(hadError) {
     this.connected = false;
@@ -361,5 +350,17 @@ export default class Rcon extends EventEmitter {
 
   decodedPacketToString(decodedPacket) {
     return util.inspect(decodedPacket, { breakLength: Infinity });
+  }
+
+  async warn(steamID, message) {
+    await this.execute(`AdminWarn "${steamID}" ${message}`);
+  }
+
+  async kick(steamID, reason) {
+    await this.execute(`AdminKick "${steamID}" ${reason}`);
+  }
+
+  async forceTeamChange(steamID) {
+    await this.execute(`AdminForceTeamChange "${steamID}"`);
   }
 }

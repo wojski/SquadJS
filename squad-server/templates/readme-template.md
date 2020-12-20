@@ -22,6 +22,8 @@
 SquadJS is a scripting framework, designed for Squad servers, that aims to handle all communication and data collection to and from the servers. Using SquadJS as the base to any of your scripting projects allows you to easily write complex plugins without having to worry about the hassle of RCON or log parsing. However, for your convenience SquadJS comes shipped with multiple plugins already built for you allowing you to experience the power of SquadJS right away.
 
 ## Using SquadJS
+SquadJS relies on being able to access the Squad server log directory in order to parse logs live to collect information. Thus, SquadJS must be hosted on the same server box as your Squad server or be connected to your Squad server via FTP.
+
 ### Prerequisites
  * Git
  * [Node.js](https://nodejs.org/en/) (Current) - [Download](https://nodejs.org/en/)
@@ -62,6 +64,7 @@ The following section of the configuration contains information about your Squad
  * `rconPort` - The RCON port of the server.
  * `rconPassword` - The RCON password of the server.
  * `logReaderMode` - `tail` will read from a local log file. `ftp` will read from a remote log file using the FTP protocol.
+ * `logDir` - The folder where your Squad logs are saved. Most likely will be `C:/servers/squad_server/SquadGame/Saved/Logs`.
  * `ftpPort` - The FTP port of the server. Only required for `ftp` `logReaderMode`.
  * `ftpUser` - The FTP user of the server. Only required for `ftp` `logReaderMode`.
  * `ftpPassword` - The FTP password of the server. Only required for `ftp` `logReaderMode`.
@@ -77,13 +80,6 @@ Connectors allow SquadJS to communicate with external resources.
 Connectors should be named, for example the above is named `discord`, and should have the associated config against it. Configs can be specified by name in plugin options. Should a connector not be needed by any plugin then the default values can be left or you can remove it from your config file.
 
 See below for more details on connectors and their associated config.
-
-##### Discord
-Connects to Discord via `discord.js`.
-```json
-"discord": "Discord Login Token",
-```
-Requires a Discord bot login token.
 
 ##### Squad Layer Filter
 Connects to a filtered list of Squad layers and filters them either by an "initial filter" or an "active filter" that depends on current server information, e.g. player count.
@@ -153,19 +149,33 @@ Connects to a filtered list of Squad layers and filters them either by an "initi
    - `factionHistoryTolerance` - A faction can only be played again after this number of layers. Factions can be specified individually inside the object. If they are not listed then the filter is not applied.
    - `factionRepetitiveTolerance` - A faction can only be played this number of times in a row. Factions can be specified individually inside the object. If they are not listed then the filter is not applied.  
 
-##### MySQL
-Connects to a MySQL database.
+##### Discord
+Connects to Discord via `discord.js`.
 ```json
-"mysql": {
-  "connectionLimit": 10,
-  "host": "host",
-  "port": 3306,
-  "user": "squadjs",
-  "password": "password",
-  "database": "squadjs"
+"discord": "Discord Login Token",
+```
+Requires a Discord bot login token.
+
+
+##### Databases
+SquadJS uses [Sequelize](https://sequelize.org/) to connect and use a wide range of SQL databases.
+
+The connector should be configured using any of Sequelize's single argument configuration options.
+
+For example:
+```json
+"mysql": "mysql://user:pass@example.com:5432/dbname"
+```
+
+or:
+```json
+"sqlite": {
+    "dialect": "sqlite",
+    "storage": "path/to/database.sqlite"
 }
 ```
-The config is a set of pool connection options as listed in the [Node.js mysql](https://www.npmjs.com/package/mysql) documentation.
+
+See [Sequelize's documentation](https://sequelize.org/master/manual/getting-started.html#connecting-to-a-database) for more details.
 
 #### Plugins
 The `plugins` section in your config file lists all plugins built into SquadJS, e.g.:
@@ -225,14 +235,11 @@ function aPluginToLogPlayerCountEvery60Seconds(server){
 A more common approach in this version of SquadJS is to react to an event happening:
 ```js
 function aPluginToLogTeamkills(server){
-  server.on(TEAMKILL, info => {
+  server.on('TEAMKILL', info => {
     console.log(info);
   });
 }
 ```
-
-A complete list of events that you can listen for and the information included within each is found [here](https://github.com/Thomas-Smyth/SquadJS/blob/master/squad-server/events.js).
-
 Various actions can be completed in a plugin. Most of these will involve outside system, e.g. Discord.js to run a Discord bot, so they are not documented here. However, you may run RCON commands using `server.rcon.execute("Command");`.
 
 If you're struggling to create a plugin, the existing [`plugins`](https://github.com/Thomas-Smyth/SquadJS/tree/master/plugins) are a good place to go for examples or feel free to ask for help in the Squad RCON Discord. 
@@ -249,12 +256,12 @@ Below is a list of scenarios we know may cause some information to be inaccurate
 
 ## Credits
 SquadJS would not be possible without the support of so many individuals and organisations. My thanks goes out to:
+ * [SquadJS's contributors](https://github.com/Thomas-Smyth/SquadJS/graphs/contributors).
+ * [My GitHub sponsors](https://github.com/sponsors/Thomas-Smyth)!
  * subtlerod for proposing the initial log parsing idea, helping to design the log parsing process and for providing multiple servers to test with.
  * Fourleaf, Mex and various other members of ToG / ToG-L for helping to stage logs and participate in small scale tests.
- * The Coalition community, including those that participate in Wednesday Fight Night, for participating in larger scale tests and for providing feedback on plugins.
- * My GitHub sponsors!
- * Everyone in the Squad RCON Discord and others who have submitted bug reports, suggestions and feedback.
- * iDronee for providing Linux Squad server logs to ensure log parsing regexes support the OS.
+ * Various Squad servers/communities for participating in larger scale tests and for providing feedback on plugins.
+ * Everyone in the Squad RCON Discord and others who have submitted bug reports, suggestions, feedback and provided logs.
 
 ## License
 ```
