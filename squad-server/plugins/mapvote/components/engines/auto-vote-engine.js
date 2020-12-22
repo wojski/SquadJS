@@ -28,17 +28,20 @@ export default class AutoVoteEngine extends EventEmitter {
 
     this.triggers = [];
 
-    this.synchro.on(NOMINATION_START, (delayTime) => {
-      this.addTrigger(delayTime, AUTO_VOTE_TRIGGER_TYPE.NOMINATE);
-    });
+    this.synchro.on(NOMINATION_START, this.onNominationStart);
+    this.synchro.on(PLUGIN_STATE_SWITCH, this.onPluginStateSwitch);
+  }
 
-    this.synchro.on(PLUGIN_STATE_SWITCH, (state) => {
-      if (!state) {
-        this.triggers.forEach((x) => {
-          x.disableTrigger();
-        });
-      }
-    });
+  onNominationStart(delayTime) {
+    this.addTrigger(delayTime, AUTO_VOTE_TRIGGER_TYPE.NOMINATE);
+  }
+
+  onPluginStateSwitch(state) {
+    if (!state) {
+      this.triggers.forEach((x) => {
+        x.disableTrigger();
+      });
+    }
   }
 
   startNewMap() {
@@ -162,6 +165,15 @@ export default class AutoVoteEngine extends EventEmitter {
 
   isAutoVoteStarted() {
     return this.triggers.find((x) => x.active);
+  }
+
+  destroy() {
+    this.trigger.forEach((x) => {
+      x.disableTrigger();
+    });
+
+    this.synchro.removeEventListener(NOMINATION_START, this.onNominationStart);
+    this.synchro.removeEventListener(PLUGIN_STATE_SWITCH, this.onPluginStateSwitch);
   }
 }
 

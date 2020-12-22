@@ -17,21 +17,10 @@ export default class BroadcastEngine extends EventEmitter {
     this.synchro = synchro;
     this.startMessage = null;
 
-    this.synchro.on(START_NEW_MAP, () => {
-      this.mapStartBroadcast();
-    });
-
-    this.synchro.on(END_VOTE, (layer) => {
-      this.voteEndBroadcast(layer);
-    });
-
-    this.synchro.on(START_VOTE, async () => {
-      await this.voteStartBroadcast();
-    });
-
-    this.synchro.on(NOMINATION_TRIGGER_CREATED, () => {
-      this.nominationStartBroadcast();
-    });
+    this.synchro.on(START_NEW_MAP, this.mapStartBroadcast);
+    this.synchro.on(END_VOTE, this.voteEndBroadcast);
+    this.synchro.on(START_VOTE, this.voteStartBroadcast);
+    this.synchro.on(NOMINATION_TRIGGER_CREATED, this.nominationStartBroadcast);
   }
 
   mapStartBroadcast() {
@@ -72,9 +61,9 @@ You can find more information about votemap by use "!mapvote help".`
     this.server.rcon.execute(`AdminBroadcast [MAPVOTE] ${this.voteEngine.getStartVotingMessage()}`);
 
     if (this.options.enableVoteStatusBroadcasting) {
-      var interval = await setInterval(async () => {
+      this.interval = await setInterval(async () => {
         if (!this.voteEngine.voteInProgress) {
-          clearInterval(interval);
+          clearInterval(this.interval);
         } else {
           await this.server.rcon.execute(
             `AdminBroadcast [MAPVOTE] ${this.voteEngine.getVotingMessage()}`
@@ -92,6 +81,15 @@ You can find more information about votemap by use "!mapvote help".`
     this.server.rcon.execute(
       `AdminBroadcast [MAPVOTE] Votemap ended, the next map will be \n ${layer}.`
     );
+  }
+
+  destroy() {
+    clearInterval(this.interval);
+    clearTimeout(this.startMessage);
+    this.synchro.removeEventListener(START_NEW_MAP, this.mapStartBroadcast);
+    this.synchro.removeEventListener(END_VOTE, this.voteEndBroadcast);
+    this.synchro.removeEventListener(START_VOTE, this.voteStartBroadcast);
+    this.synchro.removeEventListener(NOMINATION_TRIGGER_CREATED, this.nominationStartBroadcast);
   }
 }
 

@@ -4,6 +4,7 @@ import { NEW_GAME, CHAT_MESSAGE } from 'squad-server/server-events';
 import { CHATS_ADMINCHAT } from 'squad-server/constants';
 import { MAPVOTE_EXTENDED_COMMANDS } from './core/plugin-commands.js';
 import MapvoteDb from './core/mapvote-db.js';
+import Vote from './components/vote.js';
 
 export default class MapVote extends BasePlugin {
   static get description() {
@@ -193,7 +194,7 @@ export default class MapVote extends BasePlugin {
     super(server, options, optionsRaw);
 
     this.database = new MapvoteDb(options.database);
-    this.engines = new EnginesBuilder(server, options, this.database).Build();
+    this.engineBuilder = new EnginesBuilder(server, options, this.database);
   }
 
   async prepareToMount() {
@@ -218,7 +219,16 @@ export default class MapVote extends BasePlugin {
 
   startNewVote() {
     if (this.engines.synchro.isPluginEnabled) {
-      this.engines.autoVote.startNewMap();
+      if (this.vote != null) {
+        // Cleanup to prevent multi instance
+        this.vote.destroy();
+      }
+
+      // Vote with ctor has all engines inside + supervise all actions
+      this.vote = new Vote(this.engineBuilder.Build());
+
+      // TO REMOVE
+      // this.engines.autoVote.startNewMap();
     }
   }
 
