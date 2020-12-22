@@ -230,6 +230,28 @@ class SquadLayersPool extends SquadLayersBase {
     }
   }
 
+  isDlcHistoryCompliant(layerHistory, layer, dlc = null) {
+    if (this.activeFilter === null) return true;
+
+    if (typeof layer === 'string') layer = SquadLayers.getLayerByLayerName(layer);
+
+    if (dlc === null) {
+      return this.isDlcHistoryCompliant(layerHistory, layer, layer.dlc);
+    } else {
+      const dlcThreshold = this.activeFilter.dlcHistoryTolerance[dlc];
+      if (!dlcThreshold) return true;
+
+      for (let i = 0; i < Math.min(layerHistory.length, dlcThreshold); i++) {
+        if (new Date() - layerHistory[i].time > this.activeFilter.historyResetTime) return true;
+        if (layerHistory[i].dlc === dlc) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }
+
   isFactionRepetitiveCompliant(layerHistory, layer, faction = null) {
     if (this.activeFilter === null) return true;
 
