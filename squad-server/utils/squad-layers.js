@@ -4,7 +4,7 @@ import fs from 'fs';
 
 class SquadLayersBase {
   get layerNames() {
-    return this.layers.map((layer) => layer.name);
+    return this.layers.map((layer) => layer.layer);
   }
 
   getLayerByCondition(condition) {
@@ -21,7 +21,7 @@ class SquadLayersBase {
   }
 
   getLayerByLayerNameAutoCorrection(layerName) {
-    return this.getLayerByLayerName(didYouMean(layerName, this.layerNames()));
+    return this.getLayerByLayerName(didYouMean(layerName, this.layerNames));
   }
 
   getLayerByNumber(layerNumber) {
@@ -231,6 +231,9 @@ class SquadLayersPool extends SquadLayersBase {
   }
 
   isDlcHistoryCompliant(layerHistory, layer, dlc = null) {
+    if (!layer.dlc) {
+      return true;
+    }
     if (this.activeFilter === null) return true;
 
     if (typeof layer === 'string') layer = SquadLayers.getLayerByLayerName(layer);

@@ -9,7 +9,7 @@ import {
   TRIGGER_START_VOTE,
   NOMINATION_TRIGGER_CREATED,
   PLUGIN_STATE_SWITCH
-} from 'mapvote-extended/constants';
+} from 'mapvote/constants';
 
 export class EventSynchro extends EventEmitter {
   constructor() {
@@ -18,52 +18,52 @@ export class EventSynchro extends EventEmitter {
     this.isPluginEnabled = true;
   }
 
-  startNewMap() {
+  startNewMap = () => {
     console.log(`[SYNC] ${START_NEW_MAP}`);
     this.emit(START_NEW_MAP, true);
   }
 
-  startNominate(delayTime) {
+  startNominate = (delayTime) => {
     console.log(`[SYNC] ${NOMINATION_START}`);
 
     this.emit(NOMINATION_START, delayTime);
   }
 
-  nominationTriggerCreated() {
+  nominationTriggerCreated = () => {
     this.emit(NOMINATION_TRIGGER_CREATED);
   }
 
-  triggerStartVote() {
+  triggerStartVote = () => {
     console.log(`[SYNC] ${TRIGGER_START_VOTE}`);
 
     this.emit(TRIGGER_START_VOTE, true);
   }
 
-  nominationFetched(nominations) {
+  nominationFetched = (nominations) => {
     console.log(`[SYNC] ${NOMINATION_FETCH}`);
 
     this.emit(NOMINATION_FETCH, nominations);
   }
 
-  finalMapsFetched(maps) {
+  finalMapsFetched = (maps) => {
     console.log(`[SYNC] ${FINAL_MAP_FETCH}`);
 
     this.emit(FINAL_MAP_FETCH, maps);
   }
 
-  startVote() {
+  startVote = () => {
     console.log(`[SYNC] ${START_VOTE}`);
 
     this.emit(START_VOTE, true);
   }
 
-  endVote(layer) {
+  endVote = (layer) => {
     console.log(`[SYNC] ${END_VOTE}`);
 
     this.emit(END_VOTE, layer);
   }
 
-  switchPlugin() {
+  switchPlugin = () => {
     console.log(`[SYNC] ${PLUGIN_STATE_SWITCH}`);
 
     this.isPluginEnabled = !this.isPluginEnabled;

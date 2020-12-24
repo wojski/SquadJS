@@ -4,7 +4,7 @@ import {
   MAPVOTE_FILTERS_BLOCK_MODE,
   MAPVOTE_FILTERS_DECREASE_MODE,
   MAPVOTE_FILTERS_DEDUPLICATE_MAP
-} from 'mapvote-extended/constants';
+} from 'mapvote/constants';
 
 export default class MapBasketEngine {
   constructor(server, options, synchro) {
@@ -18,13 +18,13 @@ export default class MapBasketEngine {
     });
   }
 
-  async isLayerAvailableByAutoComplete(layerName) {
+  isLayerAvailableByAutoComplete = async (layerName) => {
     const layer = this.layerPool.getLayerByLayerNameAutoCorrection(layerName);
 
     return await this.isLayerAvailable(layer.layer);
   }
 
-  async isLayerAvailable(layerName) {
+  isLayerAvailable = async (layerName) => {
     const layer = this.layerPool.getLayerByLayerName(layerName);
     if (layer === null) {
       return { isAvailable: false, message: `${layerName} is not a Squad layer.` };
@@ -81,7 +81,7 @@ export default class MapBasketEngine {
     return await this.isLayerAvailableCustom(layer);
   }
 
-  async getMapsForVote(nominations) {
+  getMapsForVote = async (nominations) => {
     var randomizedMaps = [];
 
     var layers = this.layerPool.layers;
@@ -160,7 +160,7 @@ export default class MapBasketEngine {
     this.synchro.finalMapsFetched(results);
   }
 
-  shuffleArray(array) {
+  shuffleArray = (array) => {
     for (var i = array.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
       var temp = array[i];
@@ -169,7 +169,7 @@ export default class MapBasketEngine {
     }
   }
 
-  async isLayerAvailableCustom(layer) {
+  isLayerAvailableCustom = async (layer) => {
     if (this.mapBasketOptions == null || !this.mapBasketOptions.customFilters) {
       return { isAvailable: true, layer: layer };
     }
@@ -203,7 +203,7 @@ export default class MapBasketEngine {
     return { isAvailable: true, layer: layer };
   }
 
-  allowOnlyLayersFilter(filter, layer) {
+  allowOnlyLayersFilter = (filter, layer) => {
     if (!filter.layers || !filter.layers.length === 0) {
       return { isAvailable: true, layer: layer };
     } else {
@@ -222,7 +222,7 @@ export default class MapBasketEngine {
     };
   }
 
-  blockModeFilter(filter, layer) {
+  blockModeFilter = (filter, layer) => {
     if (!filter.gameModes || !filter.gameModes.length === 0) {
     } else {
       for (const mode of filter.gameModes) {
@@ -235,7 +235,7 @@ export default class MapBasketEngine {
     return { isAvailable: true, layer: layer };
   }
 
-  validateBasket(layer, basket) {
+  validateBasket = (layer, basket) => {
     var basketFilters = this.mapBasketOptions.customFilters.filter(
       (x) => x.type === MAPVOTE_FILTERS_DECREASE_MODE || x.type === MAPVOTE_FILTERS_DEDUPLICATE_MAP
     );
@@ -265,7 +265,7 @@ export default class MapBasketEngine {
     return { isAvailable: true, layer: layer };
   }
 
-  decreaseMode(filter, layer, basket) {
+  decreaseMode = (filter, layer, basket) => {
     if (!filter.gameModes || !filter.gameModes.length === 0) {
       return { isAvailable: true, layer: layer };
     } else {
@@ -295,33 +295,7 @@ export default class MapBasketEngine {
     }
   }
 
-  decreaseDLC(filter, layer, basket) {
-    if (!filter.dlc || !filter.dlc.length === 0) {
-      return { isAvailable: true, layer: layer };
-    } else {
-      var layerDlc = layer.dlc;
-
-      var filterForDlc = filter.dlc.find((x) => x.toLowerCase() === layerDlc.toLowerCase());
-
-      if (!filterForDlc) {
-        return { isAvailable: true, layer: layer };
-      }
-
-      var dlcInBasket = 0;
-
-      for (const layer of basket) {
-        var isAnyFromFilter = filter.dlc.some((x) => x.toLowerCase() === layer.dlc.toLowerCase());
-
-        if (isAnyFromFilter && ++dlcInBasket >= filter.maxAmount) {
-          break;
-        }
-      }
-
-      return { isAvailable: dlcInBasket < filter.maxAmount, layer: layer };
-    }
-  }
-
-  deduplicateMap(filter, layer, basket) {
+  deduplicateMap = (filter, layer, basket) => {
     var map = layer.map;
 
     var mapsInBasket = basket.filter((x) => x.map.toLowerCase() === map.toLowerCase());

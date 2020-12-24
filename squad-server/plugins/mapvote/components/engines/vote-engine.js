@@ -1,6 +1,6 @@
 import EventEmitter from 'events';
-import { FINAL_MAP_FETCH } from 'mapvote-extended/constants';
-import { GetTimeText } from 'mapvote-extended/helpers';
+import { FINAL_MAP_FETCH } from 'mapvote/constants';
+import { GetTimeText } from 'mapvote/helpers';
 import Logger from 'core/logger';
 
 export default class VoteEngine extends EventEmitter {
@@ -24,12 +24,12 @@ export default class VoteEngine extends EventEmitter {
     this.synchro.on(FINAL_MAP_FETCH, this.onFinalMapFetch);
   }
 
-  onFinalMapFetch(maps) {
+  onFinalMapFetch = (maps) => {
     console.log('[VOTE ENGINE] START VOTE');
     this.startVote(maps);
   }
 
-  startVote(maps) {
+  startVote = (maps) => {
     this.options = maps;
     this.voteInProgress = true;
     this.voters = [];
@@ -56,7 +56,7 @@ export default class VoteEngine extends EventEmitter {
     this.synchro.startVote();
   }
 
-  endVote() {
+  endVote = () => {
     console.log('[VOTE ENGINE] END VOTE');
 
     this.voteInProgress = false;
@@ -74,7 +74,7 @@ export default class VoteEngine extends EventEmitter {
     });
 
     Logger.verbose(
-      'MAPVOTE_EXTENDED',
+      'MAPVOTE_COMMANDS',
       2,
       `${new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')} VOTE - ${JSON.stringify(
         this.options
@@ -86,7 +86,7 @@ export default class VoteEngine extends EventEmitter {
     this.synchro.endVote(option.layer);
   }
 
-  getStartVotingMessage() {
+  getStartVotingMessage = () => {
     var message = 'Type number in chat. \n';
 
     this.options.forEach((x) => {
@@ -98,7 +98,7 @@ export default class VoteEngine extends EventEmitter {
     return message;
   }
 
-  getVotingMessage() {
+  getVotingMessage = () => {
     var message = '\n';
 
     this.options.forEach((x) => {
@@ -110,7 +110,7 @@ export default class VoteEngine extends EventEmitter {
     return message;
   }
 
-  getVotingInfo() {
+  getVotingInfo = () => {
     var messages = [];
 
     this.options.forEach((x) => {
@@ -122,11 +122,11 @@ export default class VoteEngine extends EventEmitter {
     return messages;
   }
 
-  getResult() {
+  getResult = () => {
     return this.winningMap;
   }
 
-  async setWinningMap() {
+  setWinningMap= async() => {
     var option = null;
 
     this.options.forEach((x) => {
@@ -144,7 +144,7 @@ export default class VoteEngine extends EventEmitter {
     await this.server.rcon.execute(`AdminSetNextMap ${option.layer}`);
   }
 
-  async makeVoteByNumber(number, identifier) {
+  makeVoteByNumber = async(number, identifier)=> {
     if (!this.voteInProgress) {
       return { confirmed: false, message: 'Vote ended' };
     } else {
@@ -167,11 +167,11 @@ export default class VoteEngine extends EventEmitter {
     }
   }
 
-  destroy() {
+  destroy = () => {
     this.timeouts.forEach((x) => {
       clearTimeout(x);
     });
 
-    this.synchro.removeEventListener(FINAL_MAP_FETCH, this.onFinalMapFetch);
+    this.synchro.removeListener(FINAL_MAP_FETCH, this.onFinalMapFetch);
   }
 }

@@ -4,8 +4,8 @@
 */
 
 import EventEmitter from 'events';
-import { GetTimeText } from 'mapvote-extended/helpers';
-import { NOMINATION_START, PLUGIN_STATE_SWITCH } from 'mapvote-extended/constants';
+import { GetTimeText } from 'mapvote/helpers';
+import { NOMINATION_START, PLUGIN_STATE_SWITCH } from 'mapvote/constants';
 
 export const AUTO_VOTE_TRIGGER_TYPE = {
   TICKET: 1, // How to obtain current ticket values?
@@ -33,11 +33,11 @@ export default class AutoVoteEngine extends EventEmitter {
     this.synchro.on(PLUGIN_STATE_SWITCH, this.onPluginStateSwitch);
   }
 
-  onNominationStart(delayTime) {
+  onNominationStart = (delayTime) => {
     this.addTrigger(delayTime, AUTO_VOTE_TRIGGER_TYPE.NOMINATE);
   }
 
-  onPluginStateSwitch(state) {
+  onPluginStateSwitch = (state) => {
     if (!state) {
       this.triggers.forEach((x) => {
         x.disableTrigger();
@@ -45,7 +45,7 @@ export default class AutoVoteEngine extends EventEmitter {
     }
   }
 
-  startNewMap() {
+  startNewMap = () => {
     if (!this.isEnabled) {
       return;
     }
@@ -60,7 +60,7 @@ export default class AutoVoteEngine extends EventEmitter {
     console.log('[AUTO_VOTE_ENGINE] MAP STARTED');
   }
 
-  triggerManually() {
+  triggerManually = () => {
     if (this.triggers.length > 0 && this.triggers.find((x) => x.active)) {
       this.triggerStartVote();
       return true;
@@ -69,7 +69,7 @@ export default class AutoVoteEngine extends EventEmitter {
     }
   }
 
-  setupTriggers() {
+  setupTriggers = () => {
     if (this.triggers.length > 0) {
       return;
     }
@@ -81,7 +81,7 @@ export default class AutoVoteEngine extends EventEmitter {
     });
   }
 
-  addTrigger(voteTimeDelay, type) {
+  addTrigger = (voteTimeDelay, type) => {
     if (
       type === AUTO_VOTE_TRIGGER_TYPE.NOMINATE &&
       this.triggers.find((x) => x.type === AUTO_VOTE_TRIGGER_TYPE.NOMINATE)
@@ -109,7 +109,7 @@ export default class AutoVoteEngine extends EventEmitter {
     }
   }
 
-  triggerStartVote() {
+  triggerStartVote = () => {
     this.triggers.forEach((x) => {
       x.disableTrigger();
     });
@@ -117,7 +117,7 @@ export default class AutoVoteEngine extends EventEmitter {
     this.synchro.triggerStartVote();
   }
 
-  getEarliestTrigger() {
+  getEarliestTrigger = () => {
     if (this.triggers.length === 0 || !this.triggers.find((x) => x.active)) {
       return null;
     }
@@ -141,13 +141,12 @@ export default class AutoVoteEngine extends EventEmitter {
     return GetTimeText(closestTrigger.triggerTime);
   }
 
-  getAutoVoteInfo() {
+  getAutoVoteInfo = () => {
     const info = [`Active: ${this.isEnabled}`, `Triggers: ${this.triggers.length}`];
 
     this.triggers.forEach((trigger) => {
       info.push(
-        `${trigger.name} | ${this.translateTriggerType(trigger.type)} | Active: ${
-          trigger.active
+        `${trigger.name} | ${this.translateTriggerType(trigger.type)} | Active: ${trigger.active
         } | In: ${GetTimeText(trigger.triggerTime)}`
       );
     });
@@ -155,7 +154,7 @@ export default class AutoVoteEngine extends EventEmitter {
     return info;
   }
 
-  translateTriggerType(type) {
+  translateTriggerType = (type) => {
     switch (type) {
       case AUTO_VOTE_TRIGGER_TYPE.TIME:
         return 'TIME';
@@ -166,17 +165,16 @@ export default class AutoVoteEngine extends EventEmitter {
     }
   }
 
-  isAutoVoteStarted() {
+  isAutoVoteStarted = () => {
     return this.triggers.find((x) => x.active);
   }
 
-  destroy() {
-    this.trigger.forEach((x) => {
+  destroy = () => {
+    this.triggers.forEach((x) => {
       x.disableTrigger();
     });
-
-    this.synchro.removeEventListener(NOMINATION_START, this.onNominationStart);
-    this.synchro.removeEventListener(PLUGIN_STATE_SWITCH, this.onPluginStateSwitch);
+    this.synchro.removeListener(NOMINATION_START, this.onNominationStart);
+    this.synchro.removeListener(PLUGIN_STATE_SWITCH, this.onPluginStateSwitch);
   }
 }
 
@@ -189,12 +187,12 @@ export class AutoVoteTimeTrigger {
     this.active = true;
   }
 
-  disableTrigger() {
+  disableTrigger = () => {
     clearTimeout(this.trigger);
     this.active = false;
   }
 
-  getTriggerTime() {
+  getTriggerTime = () => {
     return this.triggerTime;
   }
 }

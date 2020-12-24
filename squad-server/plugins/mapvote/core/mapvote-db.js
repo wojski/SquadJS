@@ -62,7 +62,7 @@ export default class MapvoteDb {
         notNull: true
       },
       option: {
-        type: DataTypes.NUMBER
+        type: DataTypes.INTEGER
       },
       steamId: {
         type: DataTypes.STRING
@@ -155,17 +155,18 @@ export default class MapvoteDb {
   }
 
   createModel(name, schema) {
-    this.models[name] = this.options.database.define(`DBMapvote_${name}`, schema, {
+    this.models[name] = this.database.define(`DBMapvote_${name}`, schema, {
       timestamps: false
     });
   }
 
   async setupDB() {
-    await this.models.Nomination.sync();
     await this.models.Vote.sync();
     await this.models.Votes.sync();
+    await this.models.Nomination.sync();
     await this.models.Result.sync();
     await this.models.Actions.sync();
+    await this.models.AdminActions.sync();
     await this.models.Logs.sync();
   }
 

@@ -4,7 +4,7 @@ import {
   END_VOTE,
   START_VOTE,
   NOMINATION_TRIGGER_CREATED
-} from 'mapvote-extended/constants';
+} from 'mapvote/constants';
 
 export default class BroadcastEngine extends EventEmitter {
   constructor(server, options, synchro, autoVoteEngine, voteEngine) {
@@ -23,7 +23,7 @@ export default class BroadcastEngine extends EventEmitter {
     this.synchro.on(NOMINATION_TRIGGER_CREATED, this.nominationStartBroadcast);
   }
 
-  mapStartBroadcast() {
+  mapStartBroadcast = () => {
     if (this.options.enablefirstInformationBroadcasting) {
       if (this.startMessage != null) {
         clearTimeout(this.startMessage);
@@ -34,13 +34,13 @@ export default class BroadcastEngine extends EventEmitter {
     }
   }
 
-  nominationStartBroadcast() {
+  nominationStartBroadcast = () => {
     if (this.options.enableNominationBroadcasting) {
       this.votemapInfo();
     }
   }
 
-  votemapInfo() {
+  votemapInfo = () => {
     if (!this.voteEngine.voteInProgress && this.synchro.isPluginEnabled) {
       var triggerTime = this.autoVoteEngine.getEarliestTrigger();
       if (triggerTime != null) {
@@ -53,7 +53,7 @@ You can find more information about votemap by use "!mapvote help".`
     }
   }
 
-  async voteStartBroadcast() {
+  voteStartBroadcast = async () => {
     if (!this.synchro.isPluginEnabled) {
       return;
     }
@@ -73,7 +73,7 @@ You can find more information about votemap by use "!mapvote help".`
     }
   }
 
-  voteEndBroadcast(layer) {
+  voteEndBroadcast = (layer) => {
     if (!this.synchro.isPluginEnabled) {
       return;
     }
@@ -83,13 +83,13 @@ You can find more information about votemap by use "!mapvote help".`
     );
   }
 
-  destroy() {
+  destroy = () => {
     clearInterval(this.interval);
     clearTimeout(this.startMessage);
-    this.synchro.removeEventListener(START_NEW_MAP, this.mapStartBroadcast);
-    this.synchro.removeEventListener(END_VOTE, this.voteEndBroadcast);
-    this.synchro.removeEventListener(START_VOTE, this.voteStartBroadcast);
-    this.synchro.removeEventListener(NOMINATION_TRIGGER_CREATED, this.nominationStartBroadcast);
+    this.synchro.removeListener(START_NEW_MAP, this.mapStartBroadcast);
+    this.synchro.removeListener(END_VOTE, this.voteEndBroadcast);
+    this.synchro.removeListener(START_VOTE, this.voteStartBroadcast);
+    this.synchro.removeListener(NOMINATION_TRIGGER_CREATED, this.nominationStartBroadcast);
   }
 }
 

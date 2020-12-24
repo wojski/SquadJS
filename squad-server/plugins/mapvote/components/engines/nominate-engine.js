@@ -1,6 +1,6 @@
 import EventEmitter from 'events';
-import { GetTimeText } from 'mapvote-extended/helpers';
-import { TRIGGER_START_VOTE, START_NEW_MAP, PLUGIN_STATE_SWITCH } from 'mapvote-extended/constants';
+import { GetTimeText } from 'mapvote/helpers';
+import { TRIGGER_START_VOTE, START_NEW_MAP, PLUGIN_STATE_SWITCH } from 'mapvote/constants';
 import Logger from 'core/logger';
 
 export default class NominateEngine extends EventEmitter {
@@ -25,13 +25,13 @@ export default class NominateEngine extends EventEmitter {
     this.synchro.on(PLUGIN_STATE_SWITCH, this.onPluginStateSwitch);
   }
 
-  onPluginStateSwitch(state) {
+  onPluginStateSwitch = (state) => {
     if (!state) {
       this.nominations = []; // Cleanup nominations
     }
   }
 
-  newMap() {
+  newMap = () => {
     this.nominations = [];
 
     this.nominationTime = new Date(new Date().getTime() + this.options.nominationDelayTime * 1000);
@@ -39,7 +39,7 @@ export default class NominateEngine extends EventEmitter {
     this.nominationTriggerEmitted = false;
   }
 
-  isNominationAvailable(identifier) {
+  isNominationAvailable = (identifier) => {
     if (!this.options.isEnabled) {
       return { available: false, message: 'Nominate system is disabled' };
     }
@@ -59,7 +59,7 @@ export default class NominateEngine extends EventEmitter {
     return { available: true };
   }
 
-  async addNewNomination(userText, identifier) {
+  addNewNomination = async (userText, identifier) => {
     try {
       var layerResult = await this.mapBasketEngine.isLayerAvailableByAutoComplete(userText);
 
@@ -75,7 +75,7 @@ export default class NominateEngine extends EventEmitter {
       if (nominated.length > 0 && this.options.canReNominate) {
         nominated[0].layer = layer;
         this.database.addNomination({
-          layer: layer,
+          layer: layer.layer,
           steamId: identifier,
           isAdded: true,
           isRenomination: true
@@ -83,7 +83,7 @@ export default class NominateEngine extends EventEmitter {
       } else {
         this.nominations.push(new Nomination(layer, identifier));
         this.database.addNomination({
-          layer: layer,
+          layer: layer.layer,
           steamId: identifier,
           isAdded: true,
           isRenomination: false
@@ -97,7 +97,8 @@ export default class NominateEngine extends EventEmitter {
         this.nominationTriggerEmitted = true;
         this.synchro.startNominate(this.options.voteDelayAfterFirstNominate);
       }
-      return { message: `Nominated ${layer.layer}` };
+      var msg = `Nominated ${layer.layer}`;
+      return { message: msg };
     } catch (error) {
       this.database.addNomination({
         layer: userText,
@@ -109,7 +110,7 @@ export default class NominateEngine extends EventEmitter {
     }
   }
 
-  async getNominatedMapsInfo() {
+  getNominatedMapsInfo = async () => {
     var list = [];
 
     for (const nom of this.nominations) {
@@ -121,7 +122,7 @@ export default class NominateEngine extends EventEmitter {
     return list;
   }
 
-  async getNominationsForVote() {
+  getNominationsForVote = async () => {
     var nominations = [];
 
     for (const nom of this.nominations) {
@@ -140,7 +141,7 @@ export default class NominateEngine extends EventEmitter {
     this.isVoteStarted = true;
 
     Logger.verbose(
-      'MAPVOTE_EXTENDED',
+      'MAPVOTE_COMMANDS',
       2,
       `${new Date()
         .toISOString()
@@ -151,10 +152,10 @@ export default class NominateEngine extends EventEmitter {
     this.synchro.nominationFetched(nominations);
   }
 
-  destroy() {
-    this.synchro.removeEventListener(TRIGGER_START_VOTE, this.getNominationsForVote);
-    this.synchro.removeEventListener(START_NEW_MAP, this.newMap);
-    this.synchro.removeEventListener(PLUGIN_STATE_SWITCH, this.onPluginStateSwitch);
+  destroy = () => {
+    this.synchro.removeListener(TRIGGER_START_VOTE, this.getNominationsForVote);
+    this.synchro.removeListener(START_NEW_MAP, this.newMap);
+    this.synchro.removeListener(PLUGIN_STATE_SWITCH, this.onPluginStateSwitch);
   }
 }
 

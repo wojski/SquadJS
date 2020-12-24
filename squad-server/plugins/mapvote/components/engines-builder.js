@@ -14,7 +14,7 @@ export default class EnginesBuilder {
 
   // TODO kizia: Add database
 
-  Build() {
+  Build = () => {
     var synchro = new EventSynchro();
 
     var mapBasketEngine = new MapBasketEngine(this.server, this.options, synchro);
