@@ -214,10 +214,11 @@ export default class MapVote extends BasePlugin {
   async onNewGame() {
     console.log('[MAPVOTE_EXTENDED] NEW MAP');
 
-    this.startNewVote();
+    this.initNewVoteProcess();
+    this.vote.startVote();
   }
 
-  startNewVote() {
+  initNewVoteProcess() {
     if (this.engines.synchro.isPluginEnabled) {
       if (this.vote != null) {
         // Cleanup to prevent multi instance
@@ -226,9 +227,6 @@ export default class MapVote extends BasePlugin {
 
       // Vote with ctor has all engines inside + supervise all actions
       this.vote = new Vote(this.engineBuilder.Build());
-
-      // TO REMOVE
-      // this.engines.autoVote.startNewMap();
     }
   }
 
@@ -272,6 +270,7 @@ export default class MapVote extends BasePlugin {
       } else {
         if (commandMatch) {
           if (info.chat === CHATS_ADMINCHAT) {
+            this.logAdminActivity(info.steamID, info.message);
             if (
               !this.engines.synchro.isPluginEnabled &&
               (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.autoVoteInfo) ||
@@ -284,13 +283,10 @@ export default class MapVote extends BasePlugin {
               await this.server.rcon.warn(
                 info.steamID,
                 `Available commands:
-      !mapvote admin-help - commands
-      !mapvote status - Plugin status
-      !mapvote plugin-switch - On/Off plugin
-      `
+                  !mapvote admin-help - commands
+                  !mapvote status - Plugin status
+                  !mapvote plugin-switch - On/Off plugin`
               );
-
-              this.logActivity(info.steamID, info.message);
             }
 
             if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.pluginStatus)) {
@@ -298,7 +294,6 @@ export default class MapVote extends BasePlugin {
                 info.steamID,
                 `Plugin active: ${this.engines.synchro.isPluginEnabled}`
               );
-              this.logActivity(info.steamID, info.message);
             }
 
             if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.switch)) {
@@ -308,7 +303,6 @@ export default class MapVote extends BasePlugin {
                 info.steamID,
                 `Plugin switch state to: ${this.engines.synchro.isPluginEnabled}`
               );
-              this.logActivity(info.steamID, info.message);
             }
 
             if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.help)) {
@@ -331,7 +325,6 @@ export default class MapVote extends BasePlugin {
               );
               await this.server.rcon.warn(info.steamID, '!mapvote status - Plugin status');
               await this.server.rcon.warn(info.steamID, '!mapvote plugin-switch - On/Off plugin');
-              this.logActivity(info.steamID, info.message);
             }
 
             if (this.engines.synchro.isPluginEnabled) {
@@ -343,7 +336,6 @@ export default class MapVote extends BasePlugin {
                 for (let i = 0; i < autoVoteInfo.length; i++) {
                   await this.server.rcon.warn(info.steamID, autoVoteInfo[i]);
                 }
-                this.logActivity(info.steamID, info.message);
               }
 
               if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.nominateInfo)) {
@@ -354,7 +346,6 @@ export default class MapVote extends BasePlugin {
                 for (let i = 0; i < layers.length; i++) {
                   await this.server.rcon.warn(info.steamID, layers[i]);
                 }
-                this.logActivity(info.steamID, info.message);
               }
 
               if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.voteInfo)) {
@@ -365,15 +356,12 @@ export default class MapVote extends BasePlugin {
                 for (let i = 0; i < messages.length; i++) {
                   await this.server.rcon.warn(info.steamID, messages[i]);
                 }
-                this.logActivity(info.steamID, info.message);
               }
 
               if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.emergencyRestart)) {
                 await this.server.rcon.warn(info.steamID, 'Plugin restarting...');
 
-                this.startNewVote();
-
-                this.logActivity(info.steamID, info.message);
+                this.initNewVoteProcess();
               }
 
               if (commandMatch[1].startsWith(MAPVOTE_EXTENDED_COMMANDS.admin.start)) {
@@ -382,7 +370,6 @@ export default class MapVote extends BasePlugin {
                 } else {
                   await this.server.rcon.warn(info.steamID, 'VoteMap map already happened!');
                 }
-                this.logActivity(info.steamID, info.message);
               }
             }
           } else {
@@ -440,7 +427,11 @@ export default class MapVote extends BasePlugin {
     }
   }
 
-  async logActivity(steamId, text) {
+  async logAdminActivity(steamId, text) {
     this.database.logAdminActions({ action: text, steamId: steamId });
+  }
+
+  async logActivity(steamId, text) {
+    this.database.logActions({ action: text, steamId: steamId });
   }
 }

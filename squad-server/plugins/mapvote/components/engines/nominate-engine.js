@@ -4,9 +4,10 @@ import { TRIGGER_START_VOTE, START_NEW_MAP, PLUGIN_STATE_SWITCH } from 'mapvote-
 import Logger from 'core/logger';
 
 export default class NominateEngine extends EventEmitter {
-  constructor(options, mapBasket, synchro) {
+  constructor(options, database, mapBasket, synchro) {
     super();
 
+    this.database = database;
     this.nominations = [];
     this.nominationTime = null;
 
@@ -68,16 +69,25 @@ export default class NominateEngine extends EventEmitter {
 
       var layer = layerResult.layer;
 
-      if (this.options.canReNominate) {
-        var nominated = this.nominations.filter((x) => x.identifier === identifier);
+      // Validation about renominate is done earlier
+      var nominated = this.nominations.filter((x) => x.identifier === identifier);
 
-        if (nominated.length > 0) {
-          nominated[0].layer = layer;
-        } else {
-          this.nominations.push(new Nomination(layer, identifier));
-        }
+      if (nominated.length > 0 && this.options.canReNominate) {
+        nominated[0].layer = layer;
+        this.database.addNomination({
+          layer: layer,
+          steamId: identifier,
+          isAdded: true,
+          isRenomination: true
+        });
       } else {
         this.nominations.push(new Nomination(layer, identifier));
+        this.database.addNomination({
+          layer: layer,
+          steamId: identifier,
+          isAdded: true,
+          isRenomination: false
+        });
       }
 
       console.log(this.options.isNominationTriggerVote);
@@ -87,9 +97,14 @@ export default class NominateEngine extends EventEmitter {
         this.nominationTriggerEmitted = true;
         this.synchro.startNominate(this.options.voteDelayAfterFirstNominate);
       }
-
       return { message: `Nominated ${layer.layer}` };
     } catch (error) {
+      this.database.addNomination({
+        layer: userText,
+        steamId: identifier,
+        isAdded: false,
+        isRenomination: false
+      });
       return { message: 'Invalid layer name' };
     }
   }

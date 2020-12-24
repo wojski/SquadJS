@@ -48,9 +48,6 @@ export default class MapvoteDb {
       },
       layers: {
         type: DataTypes.STRING
-      },
-      trigger: {
-        type: DataTypes.STRING
       }
     });
 
@@ -86,6 +83,24 @@ export default class MapvoteDb {
         type: DataTypes.INTEGER
       },
       layout: {
+        type: DataTypes.STRING
+      }
+    });
+
+    this.createModel('AdminActions', {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+      },
+      time: {
+        type: DataTypes.DATE,
+        notNull: true
+      },
+      action: {
+        type: DataTypes.STRING
+      },
+      steamId: {
         type: DataTypes.STRING
       }
     });
@@ -173,7 +188,7 @@ export default class MapvoteDb {
 
   async startVote(info) {
     await this.models.Vote.update(
-      { startTime: new Date(), layers: info.layers, trigger: info.trigger },
+      { startTime: new Date(), layers: info.layers },
       { where: { id: this.vote.id } }
     );
   }
@@ -196,8 +211,16 @@ export default class MapvoteDb {
     });
   }
 
-  async logAdminActions(info) {
+  async logActions(info) {
     await this.models.Actions.create({
+      time: new Date(),
+      action: info.action,
+      steamId: info.steamId
+    });
+  }
+
+  async logAdminActions(info) {
+    await this.models.AdminActions.create({
       time: new Date(),
       action: info.action,
       steamId: info.steamId

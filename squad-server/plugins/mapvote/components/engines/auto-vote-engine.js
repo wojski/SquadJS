@@ -14,10 +14,11 @@ export const AUTO_VOTE_TRIGGER_TYPE = {
 };
 
 export default class AutoVoteEngine extends EventEmitter {
-  constructor(options, synchro) {
+  constructor(options, database, synchro) {
     super();
 
     this.synchro = synchro;
+    this.database = database;
 
     if (options === null) {
       this.isEnabled = false;
@@ -48,6 +49,8 @@ export default class AutoVoteEngine extends EventEmitter {
     if (!this.isEnabled) {
       return;
     }
+
+    this.database.onNewVote();
 
     this.triggers = [];
     this.setupTriggers();

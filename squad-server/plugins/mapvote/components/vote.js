@@ -3,7 +3,9 @@ export default class Vote {
     this.engines = engines;
   }
 
-  startVote() {}
+  startVote() {
+    this.engines.autoVote.startNewMap();
+  }
 
   destroy() {
     this.autoVote.destroy();

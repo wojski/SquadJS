@@ -18,9 +18,14 @@ export default class EnginesBuilder {
     var synchro = new EventSynchro();
 
     var mapBasketEngine = new MapBasketEngine(this.server, this.options, synchro);
-    var autoVoteEngine = new AutoVoteEngine(this.options.autoVoting, synchro);
-    var nominateEngine = new NominateEngine(this.options.nomination, mapBasketEngine, synchro);
-    var voteEngine = new VoteEngine(this.server, this.options, synchro);
+    var autoVoteEngine = new AutoVoteEngine(this.options.autoVoting, this.database, synchro);
+    var nominateEngine = new NominateEngine(
+      this.options.nomination,
+      this.database,
+      mapBasketEngine,
+      synchro
+    );
+    var voteEngine = new VoteEngine(this.server, this.options, this.database, synchro);
     var broadcastingEngine = new BroadcastEngine(
       this.server,
       this.options.broadcast,

@@ -4,9 +4,10 @@ import { GetTimeText } from 'mapvote-extended/helpers';
 import Logger from 'core/logger';
 
 export default class VoteEngine extends EventEmitter {
-  constructor(server, options, synchro) {
+  constructor(server, options, database, synchro) {
     super();
 
+    this.database = database;
     this.voteInProgress = false;
     this.voteTime = options.voteTime;
     this.server = server;
@@ -19,9 +20,6 @@ export default class VoteEngine extends EventEmitter {
     this.voters = [];
 
     this.timeouts = [];
-
-    // TODO kizia: Remove
-    // this.synchro.on(START_NEW_MAP, this.onStartNewMap);
 
     this.synchro.on(FINAL_MAP_FETCH, this.onFinalMapFetch);
   }
@@ -43,6 +41,17 @@ export default class VoteEngine extends EventEmitter {
         this.endVote();
       }, this.voteTime * 1000)
     );
+
+    var optionsToStore = [];
+    for (const option of maps) {
+      optionsToStore.push({
+        option: option.id,
+        layer: option.layer,
+        teams: option.teamsInfo
+      });
+    }
+
+    this.database.startVote({ layers: JSON.stringify(optionsToStore) });
 
     this.synchro.startVote();
   }
@@ -71,6 +80,8 @@ export default class VoteEngine extends EventEmitter {
         this.options
       )}`
     );
+
+    this.database.finaliseVote({ option: option.id, winner_layout: option.layer });
 
     this.synchro.endVote(option.layer);
   }
@@ -143,6 +154,7 @@ export default class VoteEngine extends EventEmitter {
 
       var filteredOptions = this.options.filter((x) => x.id === number);
       if (filteredOptions.length > 0) {
+        await this.database.addVote({ option: number, steamId: identifier });
         filteredOptions[0].votes += 1;
         this.voters.push(identifier);
 
