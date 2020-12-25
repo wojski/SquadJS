@@ -8,7 +8,7 @@ export default class Vote {
   }
 
   isVoteInProgress = () => {
-    return this.engines.autoVote.voteInProgress;
+    return this.engines.voteEngine.voteInProgress;
   }
 
   isAutoVoteStarted = () => {

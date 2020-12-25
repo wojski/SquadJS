@@ -3,7 +3,8 @@ import {
   MAPVOTE_FILTERS_ALLOW_ONLY_LAYERS,
   MAPVOTE_FILTERS_BLOCK_MODE,
   MAPVOTE_FILTERS_DECREASE_MODE,
-  MAPVOTE_FILTERS_DEDUPLICATE_MAP
+  MAPVOTE_FILTERS_DEDUPLICATE_MAP,
+  MAPVOTE_FILTERS_DECREASE_DLC
 } from 'mapvote/constants';
 
 export default class MapBasketEngine {
@@ -235,9 +236,22 @@ export default class MapBasketEngine {
     return { isAvailable: true, layer: layer };
   }
 
+  blockModeFilter = (filter, layer) => {
+    if (!filter.gameModes || !filter.gameModes.length === 0) {
+    } else {
+      for (const mode of filter.gameModes) {
+        if (mode.toLowerCase() === layer.gamemode.toLowerCase()) {
+          return { isAvailable: false, message: filter.filterResponse };
+        }
+      }
+    }
+
+    return { isAvailable: true, layer: layer };
+  }
+
   validateBasket = (layer, basket) => {
     var basketFilters = this.mapBasketOptions.customFilters.filter(
-      (x) => x.type === MAPVOTE_FILTERS_DECREASE_MODE || x.type === MAPVOTE_FILTERS_DEDUPLICATE_MAP
+      (x) => x.type === MAPVOTE_FILTERS_DECREASE_MODE || x.type === MAPVOTE_FILTERS_DEDUPLICATE_MAP || x.type === MAPVOTE_FILTERS_DECREASE_DLC
     );
 
     const seedPlugin = this.server.plugins.find((x) => x.constructor.name === 'SeedingMode');
@@ -255,6 +269,8 @@ export default class MapBasketEngine {
         result = this.decreaseMode(filter, layer, basket);
       } else if (filter.type === MAPVOTE_FILTERS_DEDUPLICATE_MAP) {
         result = this.deduplicateMap(filter, layer, basket);
+      } else if (filter.type === MAPVOTE_FILTERS_DECREASE_DLC) {
+        result = this.decreaseDLC(filter, layer, basket);
       }
 
       if (!result.isAvailable) {
@@ -292,6 +308,36 @@ export default class MapBasketEngine {
       }
 
       return { isAvailable: gameModeInBasket < filter.maxAmount, layer: layer };
+    }
+  }
+
+  decreaseDLC(filter, layer, basket) {
+    if (!filter.dlc || !filter.dlc.length === 0) {
+      return { isAvailable: true, layer: layer };
+    } else {
+      var layerDlc = layer.dlc;
+
+      if (!layerDlc) {
+        return { isAvailable: true, layer: layer };
+      }
+
+      var filterForDlc = filter.dlc.find((x) => x.toLowerCase() === layerDlc.toLowerCase());
+
+      if (!filterForDlc) {
+        return { isAvailable: true, layer: layer };
+      }
+
+      var dlcInBasket = 0;
+
+      for (const layer of basket) {
+        var isAnyFromFilter = filter.dlc.some((x) => layer.dlc && x.toLowerCase() === layer.dlc.toLowerCase());
+
+        if (isAnyFromFilter && ++dlcInBasket >= filter.maxAmount) {
+          break;
+        }
+      }
+
+      return { isAvailable: dlcInBasket < filter.maxAmount, layer: layer };
     }
   }
 

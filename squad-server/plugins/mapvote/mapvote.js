@@ -213,8 +213,8 @@ export default class MapVote extends BasePlugin {
   }
 
   unmount = async () => {
-    this.server.removeEventListener('NEW_GAME', this.onNewGame);
-    this.server.removeEventListener('CHAT_MESSAGE', this.onChatMessage);
+    this.server.removeListener('NEW_GAME', this.onNewGame);
+    this.server.removeListener('CHAT_MESSAGE', this.onChatMessage);
   }
 
   onNewGame = async () => {
@@ -247,7 +247,8 @@ export default class MapVote extends BasePlugin {
           );
           await this.server.rcon.warn(info.steamID, voteResult.message);
         } catch (err) {
-          await this.server.rcon.warn(info.steamID, err.message);
+          this.database.addLogs({ log: ex });
+          await this.server.rcon.warn(info.steamID, "Something not working, vote not registered");
         }
       }
 
@@ -335,7 +336,6 @@ export default class MapVote extends BasePlugin {
 
             if (this.vote.isPluginEnabled()) {
               if (commandMatch[1].startsWith(MAPVOTE_COMMANDS.admin.autoVoteInfo)) {
-                console.log('autoVoteInfo');
 
                 const autoVoteInfo = this.vote.getAutoVoteInfo();
 

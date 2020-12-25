@@ -16,7 +16,8 @@ import IntervalledBroadcasts from './intervalled-broadcasts.js';
 import SeedingMode from './seeding-mode.js';
 import TeamRandomizer from './team-randomizer.js';
 import MapVote from './mapvote/mapvote.js';
-
+import DiscordFancyServerStatus from './discord-fancy-server-status.js';
+import DiscordPlayersList from './discord-players-list.js';
 const plugins = [
   AutoKickUnassigned,
   AutoTKWarn,
@@ -35,7 +36,9 @@ const plugins = [
   IntervalledBroadcasts,
   SeedingMode,
   TeamRandomizer,
-  MapVote
+  MapVote,
+  DiscordFancyServerStatus,
+  DiscordPlayersList
 ];
 
 const pluginsByName = {};

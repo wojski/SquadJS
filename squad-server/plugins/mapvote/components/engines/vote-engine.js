@@ -160,8 +160,6 @@ export default class VoteEngine extends EventEmitter {
 
         await this.setWinningMap();
 
-        console.log(filteredOptions);
-
         return { confirmed: true, message: `You voted for ${filteredOptions[0].layer}` };
       }
     }

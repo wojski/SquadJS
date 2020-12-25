@@ -32,7 +32,7 @@ export default class MapvoteDb {
       }
     });
 
-    this.createModel('Vote', {
+    this.createModel('VoteProcess', {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -47,11 +47,11 @@ export default class MapvoteDb {
         notNull: false
       },
       layers: {
-        type: DataTypes.STRING
+        type: DataTypes.TEXT 
       }
     });
 
-    this.createModel('Votes', {
+    this.createModel('Vote', {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -98,7 +98,7 @@ export default class MapvoteDb {
         notNull: true
       },
       action: {
-        type: DataTypes.STRING
+        type: DataTypes.TEXT 
       },
       steamId: {
         type: DataTypes.STRING
@@ -116,7 +116,7 @@ export default class MapvoteDb {
         notNull: true
       },
       action: {
-        type: DataTypes.STRING
+        type: DataTypes.TEXT 
       },
       steamId: {
         type: DataTypes.STRING
@@ -134,21 +134,21 @@ export default class MapvoteDb {
         notNull: true
       },
       log: {
-        type: DataTypes.STRING
+        type: DataTypes.TEXT 
       }
     });
 
-    this.models.Vote.hasMany(this.models.Votes, {
+    this.models.VoteProcess.hasMany(this.models.Vote, {
       foreignKey: { name: 'vote', allowNull: false },
       onDelete: 'CASCADE'
     });
 
-    this.models.Vote.hasMany(this.models.Nomination, {
+    this.models.VoteProcess.hasMany(this.models.Nomination, {
       foreignKey: { name: 'vote', allowNull: false },
       onDelete: 'CASCADE'
     });
 
-    this.models.Vote.hasMany(this.models.Result, {
+    this.models.VoteProcess.hasMany(this.models.Result, {
       foreignKey: { name: 'vote', allowNull: false },
       onDelete: 'CASCADE'
     });
@@ -161,8 +161,8 @@ export default class MapvoteDb {
   }
 
   async setupDB() {
+    await this.models.VoteProcess.sync();
     await this.models.Vote.sync();
-    await this.models.Votes.sync();
     await this.models.Nomination.sync();
     await this.models.Result.sync();
     await this.models.Actions.sync();
@@ -171,7 +171,7 @@ export default class MapvoteDb {
   }
 
   async onNewVote() {
-    this.vote = await this.models.Vote.create({
+    this.vote = await this.models.VoteProcess.create({
       time: new Date()
     });
   }
@@ -188,14 +188,14 @@ export default class MapvoteDb {
   }
 
   async startVote(info) {
-    await this.models.Vote.update(
+    await this.models.VoteProcess.update(
       { startTime: new Date(), layers: info.layers },
       { where: { id: this.vote.id } }
     );
   }
 
   async addVote(info) {
-    await this.models.Votes.create({
+    await this.models.Vote.create({
       time: new Date(),
       option: info.option,
       steamId: info.steamId,
