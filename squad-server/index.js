@@ -71,7 +71,7 @@ export default class SquadServer extends EventEmitter {
 
     Logger.verbose('SquadServer', 1, `Watching ${this.serverName}...`);
 
-    await this.pingSquadJSAPI();
+    // await this.pingSquadJSAPI();
   }
 
   async unwatch() {

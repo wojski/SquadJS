@@ -275,7 +275,7 @@ export default class MapVote extends BasePlugin {
           }
         }
       } else {
-        if (commandMatch) {
+        if (commandMatch) {  
           if (info.chat === 'ChatAdmin') {
             this.logAdminActivity(info.steamID, info.message);
             if (
@@ -384,6 +384,8 @@ export default class MapVote extends BasePlugin {
 
               return;
             }
+
+            this.logActivity(info.steamID, info.message);
 
             if (commandMatch[1].startsWith(MAPVOTE_COMMANDS.players.help)) {
               await this.server.rcon.warn(
