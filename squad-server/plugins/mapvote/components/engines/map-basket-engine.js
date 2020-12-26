@@ -83,67 +83,50 @@ export default class MapBasketEngine {
   }
 
   getMapsForVote = async (nominations) => {
-    var randomizedMaps = [];
-
     var layers = this.layerPool.layers;
 
-    while (randomizedMaps.length < 4) {
+    var mapsToVote = [];
+
+    var nominatedMaps = nominations;
+    this.shuffleArray(nominatedMaps)
+
+    for (const nomResult of nominatedMaps) {
+      if (mapsToVote.length >= 3) {
+        break;
+      }
+
+      let lr = nomResult.layer;
+      var basketValidatorResults = this.validateBasket(lr, mapsToVote);
+
+      if (basketValidatorResults.isAvailable) {
+        mapsToVote.push(lr);
+      }
+    }
+
+    while (mapsToVote.length < 4) {
       var layer = layers[Math.floor(Math.random() * layers.length)];
 
       if (
-        !randomizedMaps.some((x) => x.layer === layer.layer) &&
-        !randomizedMaps.some((x) => x.layer === layer.layer)
+        !mapsToVote.some((x) => x.layer === layer.layer) &&
+        !mapsToVote.some((x) => x.layer === layer.layer)
       ) {
         var result = await this.isLayerAvailable(layer.layer);
         if (!result.isAvailable) {
           continue;
         }
 
-        var basketValidatorResults = this.validateBasket(layer, randomizedMaps);
+        var basketValidatorResults = this.validateBasket(layer, mapsToVote);
         if (basketValidatorResults.isAvailable) {
-          randomizedMaps.push(result.layer);
+          mapsToVote.push(result.layer);
         }
       }
     }
 
-    var mapsToVote = [];
-
-    var i = 0;
-
-    do {
-      if (nominations.length > i) {
-        mapsToVote.push(nominations[i].layer);
-      }
-
-      if (randomizedMaps.length > i) {
-        mapsToVote.push(randomizedMaps[i]);
-      }
-
-      i++;
-    } while (mapsToVote.length < nominations.length + randomizedMaps.length);
-
-    var basket = [];
-
     this.shuffleArray(mapsToVote);
-
-    for (const item of mapsToVote) {
-      if (basket.length >= 4) {
-        break;
-      }
-
-      if (basket.some((x) => x.layer === item.layer)) {
-        continue;
-      }
-
-      var validatorResult = this.validateBasket(item, basket);
-      if (validatorResult.isAvailable) {
-        basket.push(validatorResult.layer);
-      }
-    }
 
     var results = [];
 
-    for (const item of basket) {
+    for (const item of mapsToVote) {
       results.push({
         id: results.length + 1,
         layer: item.layer,
@@ -154,9 +137,6 @@ export default class MapBasketEngine {
         votes: 0
       });
     }
-
-    console.log('4 random maps to vote');
-    console.log(basket);
 
     this.synchro.finalMapsFetched(results);
   }
