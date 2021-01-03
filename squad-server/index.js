@@ -146,6 +146,8 @@ export default class SquadServer extends EventEmitter {
       this.layerHistory.unshift({ ...data.layer, time: data.time });
       this.layerHistory = this.layerHistory.slice(0, this.layerHistoryMaxLength);
 
+      Logger.verbose('SquadServer', 1, `[DEBUG] Layer New Game:  ${this.layerHistory[0].layer}`);
+
       this.emit('NEW_GAME', data);
     });
 
