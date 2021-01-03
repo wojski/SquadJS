@@ -363,6 +363,11 @@ export default class SquadServer extends EventEmitter {
       this.gameVersion = data.raw.version;
 
       this.emit('UPDATED_A2S_INFORMATION');
+
+      if (this.logParser) {
+        this.logParser.updatePlayerNumber(this.a2sPlayerCount);
+      }
+      
     } catch (err) {
       Logger.verbose('SquadServer', 1, 'Failed to update A2S information.', err);
     }

@@ -406,7 +406,7 @@ export default class DBLog extends BasePlugin {
 
   async unmount() {
     this.server.removeEventListener('TICK_RATE', this.onTickRate);
-    this.server.removeEventListener('UPDATED_A2S_INFORMATION', this.onTickRate);
+    this.server.removeEventListener('UPDATED_A2S_INFORMATION', this.onUpdatedA2SInformation);
     this.server.removeEventListener('NEW_GAME', this.onNewGame);
     this.server.removeEventListener('PLAYER_WOUNDED', this.onPlayerWounded);
     this.server.removeEventListener('PLAYER_DIED', this.onPlayerDied);

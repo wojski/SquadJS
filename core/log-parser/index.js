@@ -14,12 +14,16 @@ export default class LogParser extends EventEmitter {
 
     options.filename = filename;
 
+    this.players = 0;
     this.eventStore = {};
 
     this.linesPerMinute = 0;
     this.matchingLinesPerMinute = 0;
     this.matchingLatency = 0;
     this.parsingStatsInterval = null;
+
+    this.numberOfEmptyResponse = 0;
+    this.emptyResponseThreshold = 3;
 
     this.processLine = this.processLine.bind(this);
     this.logStats = this.logStats.bind(this);
@@ -36,6 +40,10 @@ export default class LogParser extends EventEmitter {
       default:
         throw new Error('Invalid mode.');
     }
+  }
+
+  updatePlayerNumber = (players) => {
+    this.players = players;
   }
 
   async processLine(line) {
@@ -70,19 +78,47 @@ export default class LogParser extends EventEmitter {
     await this.logReader.watch();
     Logger.verbose('LogParser', 1, 'Watching log file...');
 
-    this.parsingStatsInterval = setInterval(this.logStats, 60 * 1000);
+    this.parsingStatsInterval = setInterval(this.verifyReading, 60 * 1000);
   }
 
-  logStats() {
+  verifyReading = async () => {
+    if (this.linesPerMinute == 0) {
+      this.linesPerMinute = 0;
+      this.matchingLinesPerMinute = 0;
+      this.matchingLatency = 0;
+
+      this.numberOfEmptyResponse++;
+
+      Logger.verbose('LogParser', 1, `No data from FTP when > 0 players, logged! [${this.numberOfEmptyResponse} / ${this.emptyResponseThreshold}]`);
+      if (this.numberOfEmptyResponse >= this.emptyResponseThreshold) {
+        Logger.verbose('LogParser', 1, `No data from FTP. Restarting FTP...`);
+        this.numberOfEmptyResponse = 0;
+        try {
+          await this.logReader.unwatch();
+        }
+        catch (ex) {
+          Logger.verbose('LogParser', 1, `Exception during disconnecting FTP client ${ex}`);
+        }
+
+        try {
+          await this.logReader.watch();
+        }
+        catch (ex) {
+          Logger.verbose('LogParser', 1, `Exception during connecting FTP client ${ex}`);
+        }
+      }
+    } else {
+      this.logStats();
+    }
+  }
+
+  logStats = () => {
     Logger.verbose(
       'LogParser',
       1,
-      `Lines parsed per minute: ${
-        this.linesPerMinute
-      } lines per minute | Matching lines per minute: ${
-        this.matchingLinesPerMinute
-      } matching lines per minute | Average matching latency: ${
-        this.matchingLatency / this.matchingLinesPerMinute
+      `Lines parsed per minute: ${this.linesPerMinute
+      } lines per minute | Matching lines per minute: ${this.matchingLinesPerMinute
+      } matching lines per minute | Average matching latency: ${this.matchingLatency / this.matchingLinesPerMinute
       }ms`
     );
     this.linesPerMinute = 0;
