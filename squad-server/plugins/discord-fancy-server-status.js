@@ -83,6 +83,8 @@ export default class DiscordFancyServerStatus extends DiscordIntervalUpdatedMess
     }
 
     buildMessage = (server) => {
+        Logger.verbose('SquadServer', 1, `[DEBUG] FANCY SERVER STATUS ${server.layerHistory[0].layer}`);
+
         let playersCount = '';
 
         playersCount += `${server.a2sPlayerCount}`;
