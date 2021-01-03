@@ -313,15 +313,16 @@ export default class SquadServer extends EventEmitter {
       const layerInfo = await this.rcon.getLayerInfo();
 
       if (this.layerHistory.length === 0) {
+        Logger.verbose('SquadServer', 1, `[DEBUG] Layer info: ${layerInfo.currentLayer}`);
+
         const layer = this.squadLayers.getLayerByLayerName(layerInfo.currentLayer);
 
-        Logger.verbose('SquadServer', 1, `[DEBUG] Layer info: ${layer}`);
-
         if (layer !== null) {
+          Logger.verbose('SquadServer', 1, `[DEBUG] Layer info details:  ${layer.layer}`);
 
           this.layerHistory.unshift({ ...layer, time: Date.now() });
           this.layerHistory = this.layerHistory.slice(0, this.layerHistoryMaxLength);
-          Logger.verbose('SquadServer', 1, `[DEBUG] Current layer map ${this.layerHistory[0]}`);
+          Logger.verbose('SquadServer', 1, `[DEBUG] Current layer map ${this.layerHistory[0].layer}`);
         }
       }
 
