@@ -140,12 +140,16 @@ export default class SquadServer extends EventEmitter {
     });
 
     this.logParser.on('NEW_GAME', (data) => {
-      // data.layer => Contains information about previous map
-      // data.layerClasname => Info about current map
       const dta = {};
 
       dta.layer = this.squadLayers.getLayerByLayerClassname(data.layerClassname);
       dta.time = data.time;
+
+      if (!data.layer) {
+        Logger.verbose('SquadServer', 1, `[DEBUG] Data layer was empty!  ${JSON.stringify(data)}`);  
+
+        data.layer = dta.layer
+      }
 
       this.layerHistory.unshift({ ...dta.layer, time: dta.time });
       this.layerHistory = this.layerHistory.slice(0, this.layerHistoryMaxLength);
@@ -377,7 +381,7 @@ export default class SquadServer extends EventEmitter {
       if (this.logParser) {
         this.logParser.updatePlayerNumber(this.a2sPlayerCount);
       }
-      
+
     } catch (err) {
       Logger.verbose('SquadServer', 1, 'Failed to update A2S information.', err);
     }
